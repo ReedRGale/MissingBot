@@ -163,7 +163,7 @@ def branching_module(dice_pool, successes, forecast, ten_agains=0, succ_set=[]):
             branches += " : " + branching_module(ten_agains,
                                                  ten_agains if forecast == sum(succ_set) + ten_agains else 0,
                                                  forecast,
-                                                 1,
+                                                 1, 
                                                  succ_set)
 
         # What's our stopping condition:  Hitting a single success roll.
