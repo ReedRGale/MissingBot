@@ -161,9 +161,7 @@ def branching_module(dice_pool, successes, forecast, ten_agains=0, succ_set=[]):
             # > Ten-agains should reset at 0 unless...
             # > > If sum(success_set) + 1 != forecast, then ten-agains need to == 0
             branches += " : " + branching_module(ten_agains,
-                                                 ten_agains
-                                                 if forecast == sum(succ_set) + ten_agains
-                                                 else 0,
+                                                 ten_agains if forecast == sum(succ_set) + ten_agains else 0,
                                                  forecast,
                                                  1,
                                                  succ_set)
