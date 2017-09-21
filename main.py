@@ -80,10 +80,11 @@ async def on_message(message):
     # List of commands.
     fc = "!forecast"
     nr = "!newactor"
-    lr = "!listactor"
-    sl = "!skill"
+    lr = "!listactors"
+    sl = "!skillroll"
     hp = "!help"
     db = "!debug"
+    commands = [fc, nr, lr, sl, hp, db]
 
     # # # # # # !forecast command # # # # # #
 
@@ -151,12 +152,12 @@ async def on_message(message):
                     await s(message, INV_FORM)
 
         # Make file if it doesn't exist.
-        f = open("data.txt", "a")
+        f = open("actors.txt", "a")
         f.close()
 
         # Pull JSON file for updating.
-        with open("data.txt", "r") as fin:
-            if os.stat("data.txt").st_size > 0:
+        with open("actors.txt", "r") as fin:
+            if os.stat("actors.txt").st_size > 0:
                 actors = json.load(fin)
             else:
                 actors = {}
@@ -167,22 +168,23 @@ async def on_message(message):
         actors[focused_actor["NAME"]] = focused_actor
 
         # Update character file.
-        with open("data.txt", "w") as fout:
+        with open("actors.txt", "w") as fout:
             json.dump(actors, fout, indent=1)
 
         return await s(message, SAVED)
 
-    # # # # # # !listactor command # # # # # #
+    # # # # # # !listactors command # # # # # #
+
     if message.content.startswith(lr):
         # Format: <Type Command>
 
         # Make file if it doesn't exist.
-        f = open("data.txt", "a")
+        f = open("actors.txt", "a")
         f.close()
 
         # Pull JSON file for reading.
-        with open("data.txt", "r") as fin:
-            if os.stat("data.txt").st_size > 0:
+        with open("actors.txt", "r") as fin:
+            if os.stat("actors.txt").st_size > 0:
                 actors = json.load(fin)
             else:
                 actors = {}
@@ -193,7 +195,7 @@ async def on_message(message):
         for name in actors:
             all_names += name + '\n'
 
-        await s(message, all_names)
+        return await s(message, all_names)
 
     # # # # # # !skill command # # # # # #
 
@@ -234,25 +236,34 @@ async def on_message(message):
         if any_inv:
             return
 
+        # TODO: Find the related character.
+
+        # TODO: Ask for any modifications to the scenario.
+
+        # TODO: Complete the roll.
+
+        # TODO: Format the roll string.
+
         return await client.send_message(message.channel, stats)
 
     # # # # # # !help command # # # # # #
 
-    # TODO: Make help command.
+    if message.content.startswith(hp):
+
+        all_commands = "Commands are currently as follows: \n\n"
+
+        for command in commands:
+            all_commands += command + '\n'
+
+        # TODO: Add support for explaining what commands do.
+
+        return await s(message, all_commands)
+
+    # # # # # # !debug command # # # # # #
 
     if message.content.startswith(db):
         # Format: <relative>
-        args = message.content.split(',')
-
-        # Check to make sure they didn't try to screw things up.
-        if len(args) > 3:
-            return await s(message, EXTRA_ARGS + '2.')
-
-        # Filter out non-numeric data
-        for i in range(0, 2):
-            args[i] = re.sub(non_numeric, '', args[i])
-
-        return await s(message, branching_module(int(args[0]), int(args[1]), int(args[1])))
+        return await s(message, "I'm not testing anything right now")
 
 
 # Methods #
