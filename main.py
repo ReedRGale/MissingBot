@@ -25,6 +25,7 @@ STATS_ALIASES = {"ATH": ATH, "DEX": DEX, "CHR": CHR, "ACA":  ACA, "SAV": SAV}
 REQ_STATS = "Which stats are related to this roll? Separate with commas. \n"
 REQ_CHARS = "Which character is rolling? \n"
 REQ_ACTOR = "Please provide a "
+SAVED = "Databank updated, for whatever reason it needed updating!"
 
 SUCCESS_VALUES = 4
 FAILURE_VALUES = 6
@@ -79,7 +80,7 @@ async def on_message(message):
     # List of commands.
     fc = "!forecast"
     nr = "!newactor"
-    la = "!listactor"
+    lr = "!listactor"
     sl = "!skill"
     hp = "!help"
     db = "!debug"
@@ -101,7 +102,6 @@ async def on_message(message):
         return await s(message, percent(calc_success(int(args[0]), int(args[1]))))
 
     # # # # # # !newactor command # # # # # #
-    # TODO: CURRENT FOCUS BELOW
 
     if message.content.startswith(nr):
         # Format: <Type Command>
@@ -157,23 +157,43 @@ async def on_message(message):
         # Pull JSON file for updating.
         with open("data.txt", "r") as fin:
             if os.stat("data.txt").st_size > 0:
-                content = json.load(fin)
+                actors = json.load(fin)
             else:
-                content = {}
+                actors = {}
 
         # TODO: Make sure you can't write over characters unless you're the GM.
 
         # Append actor to file.
-        content[focused_actor["NAME"]] = focused_actor
+        actors[focused_actor["NAME"]] = focused_actor
 
         # Update character file.
         with open("data.txt", "w") as fout:
-            json.dump(content, fout, indent=1)
+            json.dump(actors, fout, indent=1)
 
-        return await s(message, content)
+        return await s(message, SAVED)
 
     # # # # # # !listactor command # # # # # #
-    # TODO: Make function to list actors.
+    if message.content.startswith(lr):
+        # Format: <Type Command>
+
+        # Make file if it doesn't exist.
+        f = open("data.txt", "a")
+        f.close()
+
+        # Pull JSON file for reading.
+        with open("data.txt", "r") as fin:
+            if os.stat("data.txt").st_size > 0:
+                actors = json.load(fin)
+            else:
+                actors = {}
+
+        # Concatenate all names.
+        all_names = ""
+
+        for name in actors:
+            all_names += name + '\n'
+
+        await s(message, all_names)
 
     # # # # # # !skill command # # # # # #
 
