@@ -6,6 +6,7 @@
 import json
 import random
 import re
+import os
 import math
 import discord
 import asyncio
@@ -13,6 +14,17 @@ import asyncio
 
 # Global Constants #
 
+
+ATH = ["ATHLETICS", "ATH"]
+DEX = ["DEXTERITY", "DEX"]
+CHR = ["CHARISMA", "CHR"]
+ACA = ["ACADEMICS", "ACA"]
+SAV = ["SAVVY", "SAV"]
+STATS_ALIASES = {"ATH": ATH, "DEX": DEX, "CHR": CHR, "ACA":  ACA, "SAV": SAV}
+
+REQ_STATS = "Which stats are related to this roll? Separate with commas. \n"
+REQ_CHARS = "Which character is rolling? \n"
+REQ_ACTOR = "Please provide a "
 
 SUCCESS_VALUES = 4
 FAILURE_VALUES = 6
@@ -22,9 +34,12 @@ FAILURE = 'F - '
 AGAIN = 'A - '
 NEW_LINE = '\n'
 
+
 # Global Vars #
 
 
+escape_value = '!'
+focused_actor = {"NAME": "", "ATHLETICS": 0, "DEXTERITY": 0, "CHARISMA": 0, "ACADEMICS":  0, "SAVVY": 0}
 client = discord.Client()
 app_token = "MzUzMTEzODg4Nzg0NjQ2MTQ0.DIunqw.tTJF2f3cDXSYXOcMdXMCETDqrLA"
 
@@ -32,13 +47,19 @@ app_token = "MzUzMTEzODg4Nzg0NjQ2MTQ0.DIunqw.tTJF2f3cDXSYXOcMdXMCETDqrLA"
 # Error Messages #
 
 
-extra_args = "It appears you attempted to use more than the required args. This command wants "
+EXTRA_ARGS = "It appears you attempted to use more than the required args. This command wants "
+INV_ARG = "I don't recognize the keyword "
+INV_FORM = "It seems this is an invalid format. Try again."
+LT_ZERO = "A stat can't be less than 0. And, let's be fair, do you really want it to be?"
+GT_FIFT = "A stat can't be greater than 15. And that's already obnoxiously high as it is."
+ESCAPE = "Escaping command..."
 
 
 # Regexes #
 
 
-nonnumeric = '[^0-9]'
+non_numeric = '[^0-9]'
+non_alphabetic = '[^a-zA-Z]'
 
 
 # Events #
@@ -55,9 +76,15 @@ async def on_ready():
 @client.event
 async def on_message(message):
 
-    # !forecast:  Prints out success value.
+    # List of commands.
     fc = "!forecast"
+    nr = "!newactor"
+    la = "!listactor"
+    sl = "!skill"
+    hp = "!help"
     db = "!debug"
+
+    # # # # # # !forecast command # # # # # #
 
     if message.content.startswith(fc):
         # Format: [dice_pool, forecast_successes]
@@ -65,13 +92,133 @@ async def on_message(message):
 
         # Check to make sure they didn't try to screw things up.
         if len(args) > 3:
-            return await client.send_message(message.channel, extra_args + '2')
+            return await s(message, EXTRA_ARGS + '2')
 
         # Filter out non-numeric data
         for i in range(0, 2):
-            args[i] = re.sub(nonnumeric, '', args[i])
+            args[i] = re.sub(non_numeric, '', args[i])
 
-        return await client.send_message(message.channel, percent(calc_success(int(args[0]), int(args[1]))))
+        return await s(message, percent(calc_success(int(args[0]), int(args[1]))))
+
+    # # # # # # !newactor command # # # # # #
+    # TODO: CURRENT FOCUS BELOW
+
+    if message.content.startswith(nr):
+        # Format: <Type Command>
+
+        # Ask for stat values.
+        for field in focused_actor:
+
+            input_not_recorded = True
+
+            # Loop to not have to repeat the command over and over if an input is wrong.
+            while input_not_recorded:
+
+                # Ask user for the actor's field.
+                await s(message, REQ_ACTOR + field + " value:")
+                rsp = await client.wait_for_message(author=message.author)
+
+                # Escape command early.
+                if rsp.content == escape_value:
+                    await s(message, ESCAPE)
+                    return
+
+                # List of checks to make sure their input makes sense.
+                elif field != "NAME" and is_int(rsp.content):
+                    stat_val = int(rsp.content)
+                    non_neg = stat_val > -1
+                    lt_fift = stat_val < 15
+
+                    # Inform the user that -1 or less might be a bit low.
+                    if not non_neg:
+                        await s(message, LT_ZERO)
+
+                    # Inform the user that 16 or more is too high.
+                    if not lt_fift:
+                        await s(message, GT_FIFT)
+
+                    # User got it right, make sure to break this loop.
+                    if non_neg and lt_fift:
+                        focused_actor[field] = rsp.content
+                        input_not_recorded = False
+
+                elif field == "NAME":
+                    # Store the name of the character.
+                    focused_actor[field] = rsp.content
+                    input_not_recorded = False
+
+                elif field != "NAME" and not is_int(rsp.content):
+                    await s(message, INV_FORM)
+
+        # Make file if it doesn't exist.
+        f = open("data.txt", "a")
+        f.close()
+
+        # Pull JSON file for updating.
+        with open("data.txt", "r") as fin:
+            if os.stat("data.txt").st_size > 0:
+                content = json.load(fin)
+            else:
+                content = {}
+
+        # TODO: Make sure you can't write over characters unless you're the GM.
+
+        # Append actor to file.
+        content[focused_actor["NAME"]] = focused_actor
+
+        # Update character file.
+        with open("data.txt", "w") as fout:
+            json.dump(content, fout, indent=1)
+
+        return await s(message, content)
+
+    # # # # # # !listactor command # # # # # #
+    # TODO: Make function to list actors.
+
+    # # # # # # !skill command # # # # # #
+
+    if message.content.startswith(sl):
+        # Format: <Type Command>
+
+        # Ask for stats involved in roll.
+        await s(message, REQ_STATS)
+        rsp = await client.wait_for_message(author=message.author)
+
+        stats = rsp.content.split(',')
+
+        # Check to make sure they didn't try to screw things up.
+        if len(stats) > 3:
+            return await s(message, EXTRA_ARGS + "2 or less")
+
+        # Filter out non-alphabetic data
+        for i in range(len(stats)):
+            stats[i] = re.sub(non_alphabetic, '', stats[i])
+
+        # Make sure that values are acceptable
+        invalid = True
+        any_inv = False
+        i = 0
+
+        while invalid and i < len(stats):
+            for stat in STATS_ALIASES:
+                for alias in STATS_ALIASES[stat]:
+                    if alias.lower() == stats[i].lower() and invalid:
+                        invalid = False
+            if invalid:
+                await s(message, INV_ARG + stats[i])
+                any_inv = True
+            invalid = True
+            i += 1
+
+        # If invalid inputs, end the command.
+        if any_inv:
+            return
+
+        return await client.send_message(message.channel, stats)
+
+    # # # # # # !help command # # # # # #
+
+    # TODO: Make help command.
 
     if message.content.startswith(db):
         # Format: <relative>
@@ -79,17 +226,28 @@ async def on_message(message):
 
         # Check to make sure they didn't try to screw things up.
         if len(args) > 3:
-            return await client.send_message(message.channel, extra_args + '2')
+            return await s(message, EXTRA_ARGS + '2.')
 
         # Filter out non-numeric data
         for i in range(0, 2):
-            args[i] = re.sub(nonnumeric, '', args[i])
+            args[i] = re.sub(non_numeric, '', args[i])
 
-        return await client.send_message(message.channel, branching_module(int(args[0]), int(args[1]), int(args[1])))
+        return await s(message, branching_module(int(args[0]), int(args[1]), int(args[1])))
 
-    # TODO: Make help command.
 
 # Methods #
+
+def is_int(val):
+    try:
+        int(val)
+        return True
+    except ValueError:
+        return False
+
+
+def s(message, arg):
+    """Syntactical candy"""
+    return client.send_message(message.channel, arg)
 
 
 def calc_success(dice_pool, success_forecast):
@@ -163,7 +321,7 @@ def branching_module(dice_pool, successes, forecast, ten_agains=0, succ_set=[]):
             branches += " : " + branching_module(ten_agains,
                                                  ten_agains if forecast == sum(succ_set) + ten_agains else 0,
                                                  forecast,
-                                                 1, 
+                                                 1,
                                                  succ_set)
 
         # What's our stopping condition:  Hitting a single success roll.
