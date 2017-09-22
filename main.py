@@ -50,9 +50,11 @@ app_token = "MzUzMTEzODg4Nzg0NjQ2MTQ0.DIunqw.tTJF2f3cDXSYXOcMdXMCETDqrLA"
 
 EXTRA_ARGS = "It appears you attempted to use more than the required args. This command wants "
 INV_ARG = "I don't recognize the keyword "
+REPEAT_ARG = "You've already used the keyword "
 INV_FORM = "It seems this is an invalid format. Try again."
 LT_ZERO = "A stat can't be less than 0. And, let's be fair, do you really want it to be?"
 GT_FIFT = "A stat can't be greater than 15. And that's already obnoxiously high as it is."
+REPEAT = "Could you repeat the command?"
 ESCAPE = "Escaping command..."
 
 
@@ -197,44 +199,67 @@ async def on_message(message):
 
         return await s(message, all_names)
 
-    # # # # # # !skill command # # # # # #
+    # # # # # # !skillroll command # # # # # #
 
     if message.content.startswith(sl):
         # Format: <Type Command>
 
+        async def format_command(command_info, stats_array, expected_vars):
+            improperly_formatted = True
+
+            while improperly_formatted:
+                # Assume properly formatted until otherwise noted.
+                improperly_formatted = False
+
+                # Escape command early.
+                if command_info == escape_value:
+                    return await s(message, ESCAPE)
+
+                # Check to make sure they didn't try to screw things up.
+                if len(stats_array) > 3:
+                    improperly_formatted = True
+                    await s(message, EXTRA_ARGS + expected_vars +" or less")
+
+                # Filter out non-alphabetic data
+                for j in range(len(stats_array)):
+                    stats_array[j] = re.sub(non_alphabetic, '', stats_array[j])
+
         # Ask for stats involved in roll.
         await s(message, REQ_STATS)
         rsp = await client.wait_for_message(author=message.author)
-
         stats = rsp.content.split(',')
-
-        # Check to make sure they didn't try to screw things up.
-        if len(stats) > 3:
-            return await s(message, EXTRA_ARGS + "2 or less")
-
-        # Filter out non-alphabetic data
-        for i in range(len(stats)):
-            stats[i] = re.sub(non_alphabetic, '', stats[i])
+        await format_command(rsp.content, stats, 2)
 
         # Make sure that values are acceptable
-        invalid = True
-        any_inv = False
         i = 0
+        used_stat = []
 
-        while invalid and i < len(stats):
+        # For each possible name for a stat, check that the names the user input are valid.
+        while i < len(stats):
+            still_inv = True
             for stat in STATS_ALIASES:
                 for alias in STATS_ALIASES[stat]:
-                    if alias.lower() == stats[i].lower() and invalid:
-                        invalid = False
-            if invalid:
-                await s(message, INV_ARG + stats[i])
-                any_inv = True
-            invalid = True
-            i += 1
-
-        # If invalid inputs, end the command.
-        if any_inv:
-            return
+                    if alias.lower() == stats[i].lower() and used_stat != stat:
+                        still_inv = False
+                        used_stat = stat
+                    elif alias.lower() == stats[i].lower() and used_stat == stat:
+                        await s(message, REPEAT_ARG + stats[i] + "! " + REPEAT)
+                        still_inv = False
+                        i = 0
+                        used_stat = []
+                        rsp = await client.wait_for_message(author=message.author)
+                        stats = rsp.content.split(',')
+                        await format_command(rsp.content, stats, 2)
+                        break
+            if still_inv:
+                await s(message, INV_ARG + stats[i] + "! " + REPEAT)
+                i = 0
+                used_stat = []
+                rsp = await client.wait_for_message(author=message.author)
+                stats = rsp.content.split(',')
+                await format_command(rsp.content, stats, 2)
+            else:
+                i += 1
 
         # TODO: Find the related character.
 
