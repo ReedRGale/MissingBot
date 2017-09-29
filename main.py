@@ -119,16 +119,16 @@ async def on_message(message):
 
                 # Ask user for the actor's field.
                 await s(message, REQ_ACTOR + field + " value:")
-                rsp = await client.wait_for_message(author=message.author)
+                stat_rsp = await client.wait_for_message(author=message.author)
 
                 # Escape command early.
-                if rsp.content == escape_value:
+                if stat_rsp.content == escape_value:
                     await s(message, ESCAPE)
                     return
 
                 # List of checks to make sure their input makes sense.
-                elif field != "NAME" and is_int(rsp.content):
-                    stat_val = int(rsp.content)
+                elif field != "NAME" and is_int(stat_rsp.content):
+                    stat_val = int(stat_rsp.content)
                     non_neg = stat_val > -1
                     lt_fift = stat_val < 15
 
@@ -142,15 +142,15 @@ async def on_message(message):
 
                     # User got it right, make sure to break this loop.
                     if non_neg and lt_fift:
-                        focused_actor[field] = rsp.content
+                        focused_actor[field] = stat_rsp.content
                         input_not_recorded = False
 
                 elif field == "NAME":
                     # Store the name of the character.
-                    focused_actor[field] = rsp.content
+                    focused_actor[field] = stat_rsp.content
                     input_not_recorded = False
 
-                elif field != "NAME" and not is_int(rsp.content):
+                elif field != "NAME" and not is_int(stat_rsp.content):
                     await s(message, INV_FORM)
 
         # Make file if it doesn't exist.
@@ -180,19 +180,11 @@ async def on_message(message):
     if message.content.startswith(lr):
         # Format: <Type Command>
 
-        # Make file if it doesn't exist.
-        f = open("actors.txt", "a")
-        f.close()
-
-        # Pull JSON file for reading.
-        with open("actors.txt", "r") as fin:
-            if os.stat("actors.txt").st_size > 0:
-                actors = json.load(fin)
-            else:
-                actors = {}
+        # Load in file.
+        actors = get_actors()
 
         # Concatenate all names.
-        all_names = ""
+        all_names = "Character Names:"
 
         for name in actors:
             all_names += name + '\n'
@@ -204,64 +196,66 @@ async def on_message(message):
     if message.content.startswith(sl):
         # Format: <Type Command>
 
-        async def format_command(command_info, stats_array, expected_vars):
-            improperly_formatted = True
-
-            while improperly_formatted:
-                # Assume properly formatted until otherwise noted.
-                improperly_formatted = False
-
-                # Escape command early.
-                if command_info == escape_value:
-                    return await s(message, ESCAPE)
-
-                # Check to make sure they didn't try to screw things up.
-                if len(stats_array) > 3:
-                    improperly_formatted = True
-                    await s(message, EXTRA_ARGS + expected_vars +" or less")
-
-                # Filter out non-alphabetic data
-                for j in range(len(stats_array)):
-                    stats_array[j] = re.sub(non_alphabetic, '', stats_array[j])
-
         # Ask for stats involved in roll.
         await s(message, REQ_STATS)
-        rsp = await client.wait_for_message(author=message.author)
-        stats = rsp.content.split(',')
-        await format_command(rsp.content, stats, 2)
+        stat_rsp = await client.wait_for_message(author=message.author)
+        stats = stat_rsp.content.split(',')
+        stats = await format_alpha(message, stat_rsp.content, stats, 2)
+        if stats[0] == escape_value:
+            return
 
         # Make sure that values are acceptable
+        stats = await check_against_aliases(message, stats, STATS_ALIASES, format_alpha)
+        if stats[0] == escape_value:
+            return
+
+        # Find the related character.
+        actors_json = get_actors()
+        await s(message, REQ_CHARS)
+        actor_rsp = await client.wait_for_message(author=message.author)
+        actors = actor_rsp.content.split(',')
+        escape = await format_alpha(message, stat_rsp.content, stats, 2)
+        if escape is not None and escape.content == escape_value:
+            return
+
+        # TODO: Abstract this out [check_against_list(values, comparator_list, formatting_function)]
+        # Make sure that values are acceptable
         i = 0
-        used_stat = []
+        used_actor = []
 
         # For each possible name for a stat, check that the names the user input are valid.
-        while i < len(stats):
-            still_inv = True
-            for stat in STATS_ALIASES:
-                for alias in STATS_ALIASES[stat]:
-                    if alias.lower() == stats[i].lower() and used_stat != stat:
-                        still_inv = False
-                        used_stat = stat
-                    elif alias.lower() == stats[i].lower() and used_stat == stat:
-                        await s(message, REPEAT_ARG + stats[i] + "! " + REPEAT)
-                        still_inv = False
-                        i = 0
-                        used_stat = []
-                        rsp = await client.wait_for_message(author=message.author)
-                        stats = rsp.content.split(',')
-                        await format_command(rsp.content, stats, 2)
-                        break
-            if still_inv:
-                await s(message, INV_ARG + stats[i] + "! " + REPEAT)
-                i = 0
-                used_stat = []
-                rsp = await client.wait_for_message(author=message.author)
-                stats = rsp.content.split(',')
-                await format_command(rsp.content, stats, 2)
-            else:
-                i += 1
-
-        # TODO: Find the related character.
+        # while i < len(actors):
+        #     still_inv = True  # We assume its invalid to begin with...
+        #     for stat_name in STATS_ALIASES:
+        #         if alias.lower() == actors[i].lower() and used_stat != stat_name:  # If match found & not used prev.
+        #             still_inv = False
+        #             used_actor.append(stat_name)
+        #         elif alias.lower() == actors[i].lower() and used_stat == stat_name:  # If match found & used prev.
+        #             await s(message, REPEAT_ARG + stats[i] + "! " + REPEAT)
+        #             still_inv = False
+        #             i = 0  # Resets the loop.
+        #             used_stat = []
+        #
+        #             # Ask for values again.
+        #             rsp = await client.wait_for_message(author=message.author)
+        #             stats = rsp.content.split(',')
+        #             escape = await format_skills(rsp.content, stats, 2)
+        #             if escape is not None and escape.content == escape_value:
+        #                 return
+        #             break
+        #         elif still_inv:  # If match unfound.
+        #             await s(message, INV_ARG + stats[i] + "! " + REPEAT)
+        #             i = 0  # Resets the loop.
+        #             used_stat = []
+        #
+        #             # Ask for values again.
+        #             rsp = await client.wait_for_message(author=message.author)
+        #             stats = rsp.content.split(',')
+        #             escape = await format_skills(rsp.content, stats, 2)
+        #             if escape is not None and escape.content == escape_value:
+        #                 return
+        #         else:  # Otherwise, alias found; continue.
+        #             i += 1
 
         # TODO: Ask for any modifications to the scenario.
 
@@ -269,7 +263,7 @@ async def on_message(message):
 
         # TODO: Format the roll string.
 
-        return await client.send_message(message.channel, stats)
+        return await client.send_message(message.channel, actors_json)
 
     # # # # # # !help command # # # # # #
 
@@ -293,6 +287,90 @@ async def on_message(message):
 
 # Methods #
 
+
+async def check_against_aliases(message, values, aliases, format):
+    """Compares a set of aliases [a dictionary of lists] to a list of values"""
+    # Values for posterity.
+    i = 0
+    used = []
+
+    # For each possible name for a stat, check that the names the user input are valid.
+    while i < len(values):
+        invalid = True
+        for name in aliases:
+            for alias in aliases[name]:
+                if alias.lower() == values[i].lower() and name not in used:  # Alias found & not used prev.
+                    invalid = False
+                    used.append(name)
+                elif alias.lower() == values[i].lower() and name in used:  # Alias found & used prev.
+                    # Inform the user that they've repeated an argument.
+                    await s(message, REPEAT_ARG + values[i] + "! " + REPEAT)
+                    invalid = False
+
+                    # Resets the loop.
+                    i = 0
+                    used = []
+
+                    # Ask for values again.
+                    stat_rsp = await client.wait_for_message(author=message.author)
+                    values = stat_rsp.content.split(',')
+                    values = await format(message, stat_rsp.content, values, 2)
+                    if values[0] == escape_value:
+                        return escape_value
+                    break
+        if invalid:  # Alias unfound.
+            # Inform the user that they've repeated an argument.
+            await s(message, INV_ARG + values[i] + "! " + REPEAT)
+
+            # Resets the loop.
+            i = 0
+            used = []
+
+            # Ask for values again.
+            stat_rsp = await client.wait_for_message(author=message.author)
+            values = stat_rsp.content.split(',')
+            values = await format(message, stat_rsp.content, values, 2)
+            if values[0] == escape_value:
+                return escape_value
+
+        else:  # Otherwise, alias found; continue.
+            i += 1
+
+    return values
+
+
+async def check_against_list(message, values, comparators, format):
+    """Compares a set of comparators to a list of values"""
+    # TODO: Define a function to handle any comparison between lists and error handling.
+    # Copypasta 'check_against_aliases' and move from there.
+
+async def format_alpha(message, command_info, array, expected_vars):
+    """A formatting helper method that makes sure that a string is only alphabetical."""
+    improperly_formatted = True
+
+    while improperly_formatted:
+        # Assume properly formatted until otherwise noted.
+        improperly_formatted = False
+
+        # Escape command early.
+        if command_info == escape_value:
+            await s(message, ESCAPE)
+            return escape_value
+
+        # Check to make sure they didn't try to screw things up.
+        if len(array) > expected_vars:
+            improperly_formatted = True
+            await s(message, EXTRA_ARGS + str(expected_vars) + " or less. " + REPEAT)
+            formatted_rsp = await client.wait_for_message(author=message.author)
+            array = formatted_rsp.content.split(',')
+
+        # Filter out non-alphabetic data
+        for j in range(len(array)):
+            array[j] = re.sub(non_alphabetic, '', array[j])
+
+    return array
+
+
 def is_int(val):
     try:
         int(val)
@@ -302,8 +380,23 @@ def is_int(val):
 
 
 def s(message, arg):
-    """Syntactical candy"""
+    """Syntactical candy:  sends a message."""
     return client.send_message(message.channel, arg)
+
+
+def get_actors():
+    # Make file if it doesn't exist.
+    f = open("actors.txt", "a")
+    f.close()
+
+    # Pull JSON file for reading.
+    with open("actors.txt", "r") as fin:
+        if os.stat("actors.txt").st_size > 0:
+            a = json.load(fin)
+        else:
+            a = {}
+
+    return a
 
 
 def calc_success(dice_pool, success_forecast):
