@@ -14,6 +14,10 @@ import asyncio
 
 # Global Constants #
 
+AFFIRM = ["Y", "Yes", "Yup", "Uhuh", "Ye", "Yea"]
+DENY = ["N", "No", "Nah", "Nope", "Nu", "Nuu", "Nuuu", "Nuuuu", "Nuuuuu", "Nuuuuuu", "Nuuuuuuu", "Nuuuuuuuu",
+        "Noo", "Nooo", "Noooo", "Nooooo", "Nooooooo", "Noooooooo"]
+CONFIRM_ALIASES = {"AFFIRM": AFFIRM, "DENY": DENY}
 
 ATH = ["ATHLETICS", "ATH"]
 DEX = ["DEXTERITY", "DEX"]
@@ -23,8 +27,10 @@ SAV = ["SAVVY", "SAV"]
 STATS_ALIASES = {"ATH": ATH, "DEX": DEX, "CHR": CHR, "ACA":  ACA, "SAV": SAV}
 
 REQ_STATS = "Which stats are related to this roll? Separate with commas. \n"
-REQ_CHARS = "Which character is rolling? \n"
+REQ_ACTIVE_ACTOR = "Which character is rolling? \n"
 REQ_ACTOR = "Please provide a "
+ASK_IF_MODS = "Are there modifications to this roll? " \
+             "(i.e. Its dark so an examine gets -1; You made a torch to light the way +1; etc...)"
 SAVED = "Databank updated, for whatever reason it needed updating!"
 
 SUCCESS_VALUES = 4
@@ -184,10 +190,10 @@ async def on_message(message):
         actors = get_actors()
 
         # Concatenate all names.
-        all_names = "Character Names:"
+        all_names = "Character Names: \n"
 
         for name in actors:
-            all_names += name + '\n'
+            all_names += '► ' + name + '\n'
 
         return await s(message, all_names)
 
@@ -196,68 +202,33 @@ async def on_message(message):
     if message.content.startswith(sl):
         # Format: <Type Command>
 
-        # Ask for stats involved in roll.
-        await s(message, REQ_STATS)
-        stat_rsp = await client.wait_for_message(author=message.author)
-        stats = stat_rsp.content.split(',')
-        stats = await format_alpha(message, stat_rsp.content, stats, 2)
-        if stats[0] == escape_value:
-            return
-
         # Make sure that values are acceptable
-        stats = await check_against_aliases(message, stats, STATS_ALIASES, format_alpha)
+        stats = await check_input_against_aliases(message, REQ_STATS, STATS_ALIASES, format_alpha, 2)
         if stats[0] == escape_value:
             return
 
         # Find the related character.
         actors_json = get_actors()
-        await s(message, REQ_CHARS)
-        actor_rsp = await client.wait_for_message(author=message.author)
-        actors = actor_rsp.content.split(',')
-        escape = await format_alpha(message, stat_rsp.content, stats, 2)
-        if escape is not None and escape.content == escape_value:
+        all_names = []
+        for name in actors_json:
+            all_names.append(name)
+        actors = await check_input_against_list(message, REQ_ACTIVE_ACTOR, all_names, format_alpha, 1)
+        if actors[0] == escape_value:
             return
 
-        # TODO: Abstract this out [check_against_list(values, comparator_list, formatting_function)]
-        # Make sure that values are acceptable
-        i = 0
-        used_actor = []
-
-        # For each possible name for a stat, check that the names the user input are valid.
-        # while i < len(actors):
-        #     still_inv = True  # We assume its invalid to begin with...
-        #     for stat_name in STATS_ALIASES:
-        #         if alias.lower() == actors[i].lower() and used_stat != stat_name:  # If match found & not used prev.
-        #             still_inv = False
-        #             used_actor.append(stat_name)
-        #         elif alias.lower() == actors[i].lower() and used_stat == stat_name:  # If match found & used prev.
-        #             await s(message, REPEAT_ARG + stats[i] + "! " + REPEAT)
-        #             still_inv = False
-        #             i = 0  # Resets the loop.
-        #             used_stat = []
-        #
-        #             # Ask for values again.
-        #             rsp = await client.wait_for_message(author=message.author)
-        #             stats = rsp.content.split(',')
-        #             escape = await format_skills(rsp.content, stats, 2)
-        #             if escape is not None and escape.content == escape_value:
-        #                 return
-        #             break
-        #         elif still_inv:  # If match unfound.
-        #             await s(message, INV_ARG + stats[i] + "! " + REPEAT)
-        #             i = 0  # Resets the loop.
-        #             used_stat = []
-        #
-        #             # Ask for values again.
-        #             rsp = await client.wait_for_message(author=message.author)
-        #             stats = rsp.content.split(',')
-        #             escape = await format_skills(rsp.content, stats, 2)
-        #             if escape is not None and escape.content == escape_value:
-        #                 return
-        #         else:  # Otherwise, alias found; continue.
-        #             i += 1
-
         # TODO: Ask for any modifications to the scenario.
+        # Ask for confirmation on modifiers.
+        confirm = await check_input_against_aliases(message, ASK_IF_MODS, CONFIRM_ALIASES, format_alpha, 1)
+        if confirm[0] == escape_value:
+            return
+
+        # # Check confirm status.
+        # if confirm in AFFIRM:
+        #     # TODO: Loop and ask for all mods.
+        # elif confirm in DENY:
+        #     # TODO: Do nothing.
+        # else:
+        #     # TODO: Errror message.
 
         # TODO: Complete the roll.
 
@@ -288,13 +259,16 @@ async def on_message(message):
 # Methods #
 
 
-async def check_against_aliases(message, values, aliases, format):
+async def check_input_against_aliases(message, request_str, aliases, formatter, expected_vars):
     """Compares a set of aliases [a dictionary of lists] to a list of values"""
-    # Values for posterity.
+    # Prime the pump.
     i = 0
     used = []
+    values = await request_of_user(message, request_str, formatter, expected_vars)
+    if values[0] == escape_value:
+        return escape_value
 
-    # For each possible name for a stat, check that the names the user input are valid.
+    # For each possible alias, check that the names the user input are valid.
     while i < len(values):
         invalid = True
         for name in aliases:
@@ -304,32 +278,26 @@ async def check_against_aliases(message, values, aliases, format):
                     used.append(name)
                 elif alias.lower() == values[i].lower() and name in used:  # Alias found & used prev.
                     # Inform the user that they've repeated an argument.
-                    await s(message, REPEAT_ARG + values[i] + "! " + REPEAT)
+                    await s(message, REPEAT_ARG + values[i] + "!")
                     invalid = False
 
-                    # Resets the loop.
+                    # Reprime the pump.
                     i = 0
                     used = []
-
-                    # Ask for values again.
-                    stat_rsp = await client.wait_for_message(author=message.author)
-                    values = stat_rsp.content.split(',')
-                    values = await format(message, stat_rsp.content, values, 2)
+                    values = await request_of_user(message, REPEAT, formatter, expected_vars)
                     if values[0] == escape_value:
                         return escape_value
                     break
+            if not invalid:
+                break
         if invalid:  # Alias unfound.
-            # Inform the user that they've repeated an argument.
-            await s(message, INV_ARG + values[i] + "! " + REPEAT)
+            # Inform the user that their argument is invalid.
+            await s(message, INV_ARG + values[i] + "!")
 
-            # Resets the loop.
+            # Reprime the pump.
             i = 0
             used = []
-
-            # Ask for values again.
-            stat_rsp = await client.wait_for_message(author=message.author)
-            values = stat_rsp.content.split(',')
-            values = await format(message, stat_rsp.content, values, 2)
+            values = await request_of_user(message, REPEAT, formatter, expected_vars)
             if values[0] == escape_value:
                 return escape_value
 
@@ -339,10 +307,48 @@ async def check_against_aliases(message, values, aliases, format):
     return values
 
 
-async def check_against_list(message, values, comparators, format):
+async def check_input_against_list(message, request_str, comparators, formatter, expected_vars):
     """Compares a set of comparators to a list of values"""
-    # TODO: Define a function to handle any comparison between lists and error handling.
-    # Copypasta 'check_against_aliases' and move from there.
+
+    # Prime the pump.
+    i = 0
+    used = []
+    values = await request_of_user(message, request_str, formatter, expected_vars)
+    if values[0] == escape_value:
+        return escape_value
+
+    # For each possible alias, check that the names the user input are valid.
+    while i < len(values):
+        invalid = True
+        for comparator in comparators:
+            if comparator.lower() == values[i].lower() and comparator not in used:  # Alias found & not used prev.
+                invalid = False
+                used.append(comparator)
+                i += 1
+                break
+            elif comparator.lower() == values[i].lower() and comparator in used:  # Alias found & used prev.
+                # Inform the user that they've repeated an argument.
+                await s(message, REPEAT_ARG + values[i] + "! " + REPEAT)
+                invalid = False
+                # Reprime the pump.
+                i = 0
+                used = []
+                values = await request_of_user(message, request_str, formatter, expected_vars)
+                if values[0] == escape_value:
+                    return escape_value
+                break
+        if invalid:  # Alias unfound.
+            # Inform the user that their argument is invalid.
+            await s(message, INV_ARG + values[i] + "! " + REPEAT)
+            # Reprime the pump.
+            i = 0
+            used = []
+            values = await request_of_user(message, request_str, formatter, expected_vars)
+            if values[0] == escape_value:
+                return escape_value
+
+    return values
+
 
 async def format_alpha(message, command_info, array, expected_vars):
     """A formatting helper method that makes sure that a string is only alphabetical."""
@@ -397,6 +403,17 @@ def get_actors():
             a = {}
 
     return a
+
+
+async def request_of_user(message, request_str, formatter, expected_vars):
+    """Ask a request for the user and return that request as a list of inputs or return an escape character."""
+    await s(message, request_str)
+    rsp = await client.wait_for_message(author=message.author, channel=message.channel)
+    values = rsp.content.split(',')
+    values = await formatter(message, rsp.content, values, expected_vars)
+    if values[0] == escape_value:
+        return escape_value
+    return values
 
 
 def calc_success(dice_pool, success_forecast):
