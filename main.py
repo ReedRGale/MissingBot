@@ -14,9 +14,10 @@ import asyncio
 
 # Global Constants #
 
-AFFIRM = ["Y", "Yes", "Yup", "Uhuh", "Ye", "Yea"]
-DENY = ["N", "No", "Nah", "Nope", "Nu", "Nuu", "Nuuu", "Nuuuu", "Nuuuuu", "Nuuuuuu", "Nuuuuuuu", "Nuuuuuuuu",
-        "Noo", "Nooo", "Noooo", "Nooooo", "Nooooooo", "Noooooooo"]
+
+AFFIRM = ["y", "yes", "yup", "uhuh", "ye", "yea"]
+DENY = ["n", "no", "nah", "nope", "nu", "nuu", "nuuu", "nuuuu", "nuuuuu", "nuuuuuu", "nuuuuuuu", "nuuuuuuuu",
+        "noo", "nooo", "noooo", "nooooo", "nooooooo", "noooooooo"]
 CONFIRM_ALIASES = {"AFFIRM": AFFIRM, "DENY": DENY}
 
 ATH = ["ATHLETICS", "ATH"]
@@ -29,8 +30,11 @@ STATS_ALIASES = {"ATH": ATH, "DEX": DEX, "CHR": CHR, "ACA":  ACA, "SAV": SAV}
 REQ_STATS = "Which stats are related to this roll? Separate with commas. \n"
 REQ_ACTIVE_ACTOR = "Which character is rolling? \n"
 REQ_ACTOR = "Please provide a "
+REQ_MOD_REASON = "What's one factor affecting this roll?"
+REQ_MOD_AMOUNT = "What's by how many dice should this affect the roll? (i.e. -3, 4, 1, 2, etc...)"
 ASK_IF_MODS = "Are there modifications to this roll? " \
-             "(i.e. Its dark so an examine gets -1; You made a torch to light the way +1; etc...)"
+             "(i.e. Its dark; You made a torch to light the way; etc...)"
+ASK_IF_MORE = "Any more?"
 SAVED = "Databank updated, for whatever reason it needed updating!"
 
 SUCCESS_VALUES = 4
@@ -45,7 +49,7 @@ NEW_LINE = '\n'
 # Global Vars #
 
 
-escape_value = '!'
+escape_value = '!'  # TODO: change this value and see if it still works.
 focused_actor = {"NAME": "", "ATHLETICS": 0, "DEXTERITY": 0, "CHARISMA": 0, "ACADEMICS":  0, "SAVVY": 0}
 client = discord.Client()
 app_token = "MzUzMTEzODg4Nzg0NjQ2MTQ0.DIunqw.tTJF2f3cDXSYXOcMdXMCETDqrLA"
@@ -57,7 +61,7 @@ app_token = "MzUzMTEzODg4Nzg0NjQ2MTQ0.DIunqw.tTJF2f3cDXSYXOcMdXMCETDqrLA"
 EXTRA_ARGS = "It appears you attempted to use more than the required args. This command wants "
 INV_ARG = "I don't recognize the keyword "
 REPEAT_ARG = "You've already used the keyword "
-INV_FORM = "It seems this is an invalid format. Try again."
+INV_FORM = "It seems invalid. Try again."
 LT_ZERO = "A stat can't be less than 0. And, let's be fair, do you really want it to be?"
 GT_FIFT = "A stat can't be greater than 15. And that's already obnoxiously high as it is."
 REPEAT = "Could you repeat the command?"
@@ -67,7 +71,7 @@ ESCAPE = "Escaping command..."
 # Regexes #
 
 
-non_numeric = '[^0-9]'
+non_numeric = '[^\d\-]'
 non_alphabetic = '[^a-zA-Z]'
 
 
@@ -202,8 +206,10 @@ async def on_message(message):
     if message.content.startswith(sl):
         # Format: <Type Command>
 
+        # TODO: Ask for reason for roll
+
         # Make sure that values are acceptable
-        stats = await check_input_against_aliases(message, REQ_STATS, STATS_ALIASES, format_alpha, 2)
+        stats = await user_input_against_aliases(message, REQ_STATS, STATS_ALIASES, format_alpha, expected_vars=2)
         if stats[0] == escape_value:
             return
 
@@ -212,23 +218,45 @@ async def on_message(message):
         all_names = []
         for name in actors_json:
             all_names.append(name)
-        actors = await check_input_against_list(message, REQ_ACTIVE_ACTOR, all_names, format_alpha, 1)
+        actors = await user_input_against_list(message, REQ_ACTIVE_ACTOR, all_names, format_alpha, expected_vars=1)
         if actors[0] == escape_value:
             return
 
-        # TODO: Ask for any modifications to the scenario.
         # Ask for confirmation on modifiers.
-        confirm = await check_input_against_aliases(message, ASK_IF_MODS, CONFIRM_ALIASES, format_alpha, 1)
+        confirm = await user_input_against_aliases(message, ASK_IF_MODS, CONFIRM_ALIASES, format_alpha, expected_vars=1)
         if confirm[0] == escape_value:
             return
 
-        # # Check confirm status.
-        # if confirm in AFFIRM:
-        #     # TODO: Loop and ask for all mods.
-        # elif confirm in DENY:
-        #     # TODO: Do nothing.
-        # else:
-        #     # TODO: Errror message.
+        # Define Lists
+        mod_r = []  # Reasons
+        mod_v = []  # Values
+
+        # Check confirm status.
+        while confirm[0].lower() in AFFIRM:
+            # Request mod reason.
+            reason = await request_of_user(message, REQ_MOD_REASON, format_none, expected_vars=1)
+            if reason[0] == escape_value:
+                return escape_value
+            mod_r.append(reason[0])
+
+            no_int = True  # No proper input yet given.
+
+            while no_int:
+                # Request mod amount.
+                amount = await request_of_user(message, REQ_MOD_AMOUNT, format_numer, expected_vars=1)
+                if amount[0] == escape_value:
+                    return escape_value
+                no_int = not is_int(amount[0])
+                if no_int:
+                    await s(message, INV_FORM)
+
+            mod_v.append(amount[0])
+
+            # Ask if more mods.
+            confirm = await user_input_against_aliases(message, ASK_IF_MORE, CONFIRM_ALIASES,
+                                                       format_alpha, expected_vars=1)
+            if confirm[0] == escape_value:
+                return
 
         # TODO: Complete the roll.
 
@@ -253,13 +281,14 @@ async def on_message(message):
 
     if message.content.startswith(db):
         # Format: <relative>
-        return await s(message, "I'm not testing anything right now")
+        test = await request_of_user(message, "TESTING REGEX", format_numer, expected_vars=1)
+        return await client.send_message(message.channel, test[0])
 
 
 # Methods #
 
 
-async def check_input_against_aliases(message, request_str, aliases, formatter, expected_vars):
+async def user_input_against_aliases(message, request_str, aliases, formatter, expected_vars):
     """Compares a set of aliases [a dictionary of lists] to a list of values"""
     # Prime the pump.
     i = 0
@@ -307,7 +336,7 @@ async def check_input_against_aliases(message, request_str, aliases, formatter, 
     return values
 
 
-async def check_input_against_list(message, request_str, comparators, formatter, expected_vars):
+async def user_input_against_list(message, request_str, comparators, formatter, expected_vars):
     """Compares a set of comparators to a list of values"""
 
     # Prime the pump.
@@ -367,7 +396,7 @@ async def format_alpha(message, command_info, array, expected_vars):
         if len(array) > expected_vars:
             improperly_formatted = True
             await s(message, EXTRA_ARGS + str(expected_vars) + " or less. " + REPEAT)
-            formatted_rsp = await client.wait_for_message(author=message.author)
+            formatted_rsp = await client.wait_for_message(author=message.author, channel=message.channel)
             array = formatted_rsp.content.split(',')
 
         # Filter out non-alphabetic data
@@ -375,6 +404,67 @@ async def format_alpha(message, command_info, array, expected_vars):
             array[j] = re.sub(non_alphabetic, '', array[j])
 
     return array
+
+
+async def format_numer(message, command_info, array, expected_vars):
+    """A formatting helper method that makes sure that a string is only alphabetical."""
+    improperly_formatted = True
+
+    while improperly_formatted:
+        # Assume properly formatted until otherwise noted.
+        improperly_formatted = False
+
+        # Escape command early.
+        if command_info == escape_value:
+            await s(message, ESCAPE)
+            return escape_value
+
+        # Check to make sure they didn't try to screw things up.
+        if len(array) > expected_vars:
+            improperly_formatted = True
+            await s(message, EXTRA_ARGS + str(expected_vars) + " or less. " + REPEAT)
+            formatted_rsp = await client.wait_for_message(author=message.author, channel=message.channel)
+            array = formatted_rsp.content.split(',')
+
+        # Filter out non-alphabetic data
+        for j in range(len(array)):
+            array[j] = re.sub(non_numeric, '', array[j])
+
+    return array
+
+
+async def format_none(message, command_info, array, expected_vars):
+    """A formatting helper method that makes sure that a ser of values is only so many arguments."""
+    improperly_formatted = True
+
+    while improperly_formatted:
+        # Assume properly formatted until otherwise noted.
+        improperly_formatted = False
+
+        # Escape command early.
+        if command_info == escape_value:
+            await s(message, ESCAPE)
+            return escape_value
+
+        # Check to make sure they didn't try to screw things up.
+        if len(array) > expected_vars:
+            improperly_formatted = True
+            await s(message, EXTRA_ARGS + str(expected_vars) + " or less. " + REPEAT)
+            formatted_rsp = await client.wait_for_message(author=message.author, channel=message.channel)
+            array = formatted_rsp.content.split(',')
+
+    return array
+
+
+async def request_of_user(message, request_str, formatter, expected_vars):
+    """Ask a request for the user and return that request as a list of inputs or return an escape character."""
+    await s(message, request_str)
+    rsp = await client.wait_for_message(author=message.author, channel=message.channel)
+    values = rsp.content.split(',')
+    values = await formatter(message, rsp.content, values, expected_vars)
+    if values[0] == escape_value:
+        return escape_value
+    return values
 
 
 def is_int(val):
@@ -403,17 +493,6 @@ def get_actors():
             a = {}
 
     return a
-
-
-async def request_of_user(message, request_str, formatter, expected_vars):
-    """Ask a request for the user and return that request as a list of inputs or return an escape character."""
-    await s(message, request_str)
-    rsp = await client.wait_for_message(author=message.author, channel=message.channel)
-    values = rsp.content.split(',')
-    values = await formatter(message, rsp.content, values, expected_vars)
-    if values[0] == escape_value:
-        return escape_value
-    return values
 
 
 def calc_success(dice_pool, success_forecast):
@@ -517,6 +596,7 @@ def add_actor(name, ath, dex, chr, acd, sav):
 def skill_check(first, second, actor, **mods):
     """A function that takes skill types, character and mods, rolls that many die, then returns a formatted string."""
     # TODO: Find a way to store characters.
+
 
 def skill_calc(*mods):
     """A function that takes two skill values and modifiers, adds them together, then rolls that many die."""
