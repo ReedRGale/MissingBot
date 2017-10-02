@@ -31,7 +31,8 @@ REQ_STATS = "Which stats are related to this roll? Separate with commas. \n"
 REQ_ACTIVE_ACTOR = "Which character is rolling? \n"
 REQ_ACTOR = "Please provide a "
 REQ_MOD_REASON = "What's one factor affecting this roll?"
-REQ_MOD_AMOUNT = "What's by how many dice should this affect the roll? (i.e. -3, 4, 1, 2, etc...)"
+REQ_ROLL_PURPOSE = "What's this skill roll for?"
+REQ_MOD_AMOUNT = "By how many dice should this affect the roll? (i.e. -3, 4, 1, 2, etc...)"
 ASK_IF_MODS = "Are there modifications to this roll? " \
              "(i.e. Its dark; You made a torch to light the way; etc...)"
 ASK_IF_MORE = "Any more?"
@@ -206,7 +207,10 @@ async def on_message(message):
     if message.content.startswith(sl):
         # Format: <Type Command>
 
-        # TODO: Ask for reason for roll
+        # Request roll purpose.
+        purpose = await request_of_user(message, REQ_ROLL_PURPOSE, format_none, expected_vars=1)
+        if purpose[0] == escape_value:
+            return escape_value
 
         # Make sure that values are acceptable
         stats = await user_input_against_aliases(message, REQ_STATS, STATS_ALIASES, format_alpha, expected_vars=2)
@@ -221,6 +225,9 @@ async def on_message(message):
         actors = await user_input_against_list(message, REQ_ACTIVE_ACTOR, all_names, format_alpha, expected_vars=1)
         if actors[0] == escape_value:
             return
+
+        # Ensure we have the correct json object.
+        actors_json = actors_json[actors[0].title()]
 
         # Ask for confirmation on modifiers.
         confirm = await user_input_against_aliases(message, ASK_IF_MODS, CONFIRM_ALIASES, format_alpha, expected_vars=1)
@@ -258,9 +265,45 @@ async def on_message(message):
             if confirm[0] == escape_value:
                 return
 
-        # TODO: Complete the roll.
+        # Complete the roll.
+        norm_stat_types = []
+        base_pool = 0
+        dice_pool = 0
+        successes = 0
 
-        # TODO: Format the roll string.
+        for stat in stats:
+            norm_stat_types.append(redeem_alias(stat, STATS_ALIASES))
+
+        for stat in norm_stat_types:
+            dice_pool += int(actors_json[stat])
+
+        base_pool = dice_pool
+
+        for mod in mod_v:
+            dice_pool += int(mod)
+
+        # Roll the proper number of die.
+        if dice_pool > 0:
+            for _ in range(dice_pool):
+                val = roll_die()
+
+                while val == DICE_SIZE:
+                    successes += 1
+                    val = roll_die()
+
+                if val > FAILURE_VALUES:
+                    successes += 1
+        else:
+            val = roll_die()
+
+            if val != 1:
+                while val == DICE_SIZE:
+                    successes += 1
+                    val = roll_die()
+            else:
+                successes = "CRITICAL FAILURE"
+
+        print()
 
         return await client.send_message(message.channel, actors_json)
 
@@ -286,6 +329,17 @@ async def on_message(message):
 
 
 # Methods #
+
+
+def redeem_alias(alias_i, aliases):
+    """Returns the normalized form (first element in the list) of an alias value"""
+    # Compare alias to other aliases
+    for alias in aliases:
+        for value in aliases[alias]:
+            if value.lower() == alias_i.lower():
+                return aliases[alias][0]
+
+    return None
 
 
 async def user_input_against_aliases(message, request_str, aliases, formatter, expected_vars):
