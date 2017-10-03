@@ -293,6 +293,7 @@ async def on_message(message):
 
                 if val > FAILURE_VALUES:
                     successes += 1
+            successes = "Successes: " + str(successes)
         else:
             val = roll_die()
 
@@ -300,12 +301,37 @@ async def on_message(message):
                 while val == DICE_SIZE:
                     successes += 1
                     val = roll_die()
+                successes = "Successes: " + str(successes)
             else:
                 successes = "CRITICAL FAILURE"
 
-        print()
+        # Put together mod string.
+        if len(mod_r) > 0:
+            mod_s = "Modifiers: "
+            for i in range(len(mod_r)):
+                if i < len(mod_r):
+                    mod_s += mod_r[i] + " "
+                    mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + "), "
+                else:
+                    mod_s += mod_r[i] + " "
+                    mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + ") "
+        else:
+            mod_s = "No Modifiers."
 
-        return await client.send_message(message.channel, actors_json)
+        if dice_pool > 0:
+            pool_s = ("Base Pool: " + str(base_pool) + " ==> Dice Pool: " + str(dice_pool) if dice_pool != base_pool
+                      else "Dice Pool: " + str(dice_pool))
+        else:
+            pool_s = "Luck Roll..."
+
+        final_string =  \
+            "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
+                                        else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
+            + "> " + mod_s + '\n' \
+            + "> " + pool_s + '\n' \
+            + "> " + successes
+
+        return await client.send_message(message.channel, final_string)
 
     # # # # # # !help command # # # # # #
 
@@ -487,7 +513,7 @@ async def format_numer(message, command_info, array, expected_vars):
     return array
 
 
-async def format_none(message, command_info, array, expected_vars):
+async def format_none(message, command_info, array, expected_vars=1):
     """A formatting helper method that makes sure that a ser of values is only so many arguments."""
     improperly_formatted = True
 
@@ -500,14 +526,16 @@ async def format_none(message, command_info, array, expected_vars):
             await s(message, ESCAPE)
             return escape_value
 
-        # Check to make sure they didn't try to screw things up.
-        if len(array) > expected_vars:
-            improperly_formatted = True
-            await s(message, EXTRA_ARGS + str(expected_vars) + " or less. " + REPEAT)
-            formatted_rsp = await client.wait_for_message(author=message.author, channel=message.channel)
-            array = formatted_rsp.content.split(',')
+        single_statement = [""]
 
-    return array
+        # Concatenate if they had a comma. Basically, glue it back together. Elegiggle.
+        if len(array) > expected_vars:
+            for bucket in len(array):
+                single_statement[0] += bucket if bucket == len(array) else bucket + ','
+        else:
+            single_statement = array
+
+    return single_statement
 
 
 async def request_of_user(message, request_str, formatter, expected_vars):
