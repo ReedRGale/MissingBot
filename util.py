@@ -296,7 +296,7 @@ async def perform_skill_roll(message):
     purpose = await request_of_user(message, st.REQ_ROLL_PURPOSE,
                                     format_none, expected_vars=1)
     if purpose[0] == val.escape_value:
-        return s(message, st.ESCAPE)
+        return val.escape_value
 
     # Find the related character.
     actors_json = get_actors()
@@ -306,13 +306,13 @@ async def perform_skill_roll(message):
     actors = await user_input_against_list(message, st.REQ_ACTIVE_ACTOR, all_names,
                                            format_alpha, expected_vars=1)
     if actors[0] == val.escape_value:
-        return s(message, st.ESCAPE)
+        return val.escape_value
 
     # Request stats for roll.
     stats = await user_input_against_aliases(message, st.REQ_STATS, alias.STATS_ALIASES,
                                              format_alpha, expected_vars=2)
     if stats[0] == val.escape_value:
-        return s(message, st.ESCAPE)
+        return val.escape_value
 
     # Ensure we have the correct json object.
     actors_json = actors_json[actors[0].title()]
@@ -320,7 +320,7 @@ async def perform_skill_roll(message):
     # Retrieve mods.
     mod = await ask_for_mods(message)
     if actors[0] == val.escape_value:
-        return s(message, st.ESCAPE)
+        return val.escape_value
 
     # Allocate mod particulates to proper locations.
     mod_r = mod[0]  # Reasons

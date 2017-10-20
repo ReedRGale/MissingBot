@@ -1,4 +1,4 @@
-# Version 1.1.0
+# Version 1.1.3
 #
 #  ----------- Script by ReedRGale ----------- #
 # Designed to handle rolls for the Missing RP #
@@ -96,6 +96,8 @@ async def on_message(message):
 
         # Begin the skill roll.
         final_string = await util.perform_skill_roll(message)
+        if final_string == val.escape_value:
+            return s(message, st.ESCAPE)
 
         return await s(message, final_string)
 
