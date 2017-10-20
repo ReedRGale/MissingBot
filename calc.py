@@ -141,10 +141,12 @@ def skill_roll(dice_pool):
 
 
 def roll_die():
+    """Roll a 10 sided die."""
     return random.randint(1, val.DICE_SIZE)
 
 
 def is_int(num):
+    """Tool to tell me if something is an int or not without crashing."""
     try:
         int(num)
         return True
