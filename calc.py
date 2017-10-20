@@ -110,6 +110,36 @@ def branching_module(dice_pool, successes, forecast, ten_agains=0, succ_set=[]):
     return branches
 
 
+def skill_roll(dice_pool):
+    """Rolls a stat-based skill roll"""
+    # Prepare initial success.
+    successes = 0
+
+    if dice_pool > 0:
+        for _ in range(dice_pool):
+            num = roll_die()
+
+            while num == val.DICE_SIZE:
+                successes += 1
+                num = roll_die()
+
+            if num > val.FAILURE_VALUES:
+                successes += 1
+        successes = "Successes: " + str(successes)
+    else:
+        num = roll_die()
+
+        if num != 1:
+            while num == val.DICE_SIZE:
+                successes += 1
+                num = roll_die()
+            successes = "Successes: " + str(successes)
+        else:
+            successes = "CRITICAL FAILURE"
+
+    return successes
+
+
 def roll_die():
     return random.randint(1, val.DICE_SIZE)
 

@@ -1,4 +1,6 @@
-# ----------- Script by ReedRGale ----------- #
+# Version 1.1.0
+#
+#  ----------- Script by ReedRGale ----------- #
 # Designed to handle rolls for the Missing RP #
 
 
@@ -66,7 +68,10 @@ async def on_message(message):
     if message.content.startswith('!' + nr):
 
         # Ask the questions and add the actor.
-        await util.add_actor(message)
+        e_nr = await util.add_actor(message)
+        if e_nr == val.escape_value:
+            return s(message, st.ESCAPE)
+
         return await s(message, st.SAVED)
 
     # # # # # # !listactors command # # # # # #
@@ -88,137 +93,9 @@ async def on_message(message):
 
     if message.content.startswith('!' + sl):
         # Format: <Type Command>
-        # TODO: Snip out parts of this for readability.
 
-        # Request roll purpose.
-        purpose = await util.request_of_user(message, st.REQ_ROLL_PURPOSE,
-                                             util.format_none, expected_vars=1)
-        if purpose[0] == val.escape_value:
-            return val.escape_value
-
-        # Make sure that values are acceptable
-        stats = await util.user_input_against_aliases(message, st.REQ_STATS, alias.STATS_ALIASES,
-                                                      util.format_alpha, expected_vars=2)
-        if stats[0] == val.escape_value:
-            return
-
-        # Find the related character.
-        actors_json = util.get_actors()
-        all_names = []
-        for name in actors_json:
-            all_names.append(name)
-        actors = await util.user_input_against_list(message, st.REQ_ACTIVE_ACTOR, all_names,
-                                                    util.format_alpha, expected_vars=1)
-        if actors[0] == val.escape_value:
-            return
-
-        # Ensure we have the correct json object.
-        actors_json = actors_json[actors[0].title()]
-
-        # Ask for confirmation on modifiers.
-        confirm = await util.user_input_against_aliases(message, st.ASK_IF_MODS, alias.CONFIRM_ALIASES,
-                                                        util.format_alpha, expected_vars=1)
-        if confirm[0] == val.escape_value:
-            return
-
-        # Define Lists
-        mod_r = []  # Reasons
-        mod_v = []  # Values
-
-        # Check confirm status.
-        while confirm[0].lower() in alias.AFFIRM:
-            # Request mod reason.
-            reason = await util.request_of_user(message, st.REQ_MOD_REASON,
-                                                util.format_none, expected_vars=1)
-            if reason[0] == val.escape_value:
-                return val.escape_value
-            mod_r.append(reason[0])
-
-            no_int = True  # No proper input yet given.
-
-            while no_int:
-                # Request mod amount.
-                amount = await util.request_of_user(message, st.REQ_MOD_AMOUNT,
-                                                    util.format_numer, expected_vars=1)
-                if amount[0] == val.escape_value:
-                    return val.escape_value
-                no_int = not calc.is_int(amount[0])
-                if no_int:
-                    await s(message, st.INV_FORM)
-
-            mod_v.append(amount[0])
-
-            # Ask if more mods.
-            confirm = await util.user_input_against_aliases(message, st.ASK_IF_MORE_MODS, alias.CONFIRM_ALIASES,
-                                                            util.format_alpha, expected_vars=1)
-            if confirm[0] == val.escape_value:
-                return
-
-        # Complete the roll.
-        norm_stat_types = []
-        base_pool = 0
-        dice_pool = 0
-        successes = 0
-
-        for stat in stats:
-            norm_stat_types.append(util.redeem_alias(stat, alias.STATS_ALIASES))
-
-        for stat in norm_stat_types:
-            dice_pool += int(actors_json[stat])
-
-        base_pool = dice_pool
-
-        for mod in mod_v:
-            dice_pool += int(mod)
-
-        # Roll the proper number of die.
-        if dice_pool > 0:
-            for _ in range(dice_pool):
-                num = calc.roll_die()
-
-                while num == val.DICE_SIZE:
-                    successes += 1
-                    num = calc.roll_die()
-
-                if num > val.FAILURE_VALUES:
-                    successes += 1
-            successes = "Successes: " + str(successes)
-        else:
-            num = calc.roll_die()
-
-            if num != 1:
-                while num == val.DICE_SIZE:
-                    successes += 1
-                    num = calc.roll_die()
-                successes = "Successes: " + str(successes)
-            else:
-                successes = "CRITICAL FAILURE"
-
-        # Put together mod string.
-        if len(mod_r) > 0:
-            mod_s = "Modifiers: "
-            for i in range(len(mod_r)):
-                if i < len(mod_r):
-                    mod_s += mod_r[i] + " "
-                    mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + "), "
-                else:
-                    mod_s += mod_r[i] + " "
-                    mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + ") "
-        else:
-            mod_s = "No Modifiers."
-
-        if dice_pool > 0:
-            pool_s = ("Base Pool: " + str(base_pool) + " ==> Dice Pool: " + str(dice_pool) if dice_pool != base_pool
-                      else "Dice Pool: " + str(dice_pool))
-        else:
-            pool_s = "Luck Roll..."
-
-        final_string =  \
-            "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
-                                        else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
-            + "> " + mod_s + '\n' \
-            + "> " + pool_s + '\n' \
-            + "> " + successes
+        # Begin the skill roll.
+        final_string = await util.perform_skill_roll(message)
 
         return await s(message, final_string)
 

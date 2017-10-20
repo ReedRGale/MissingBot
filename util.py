@@ -9,6 +9,7 @@ import st
 import val
 import calc
 import reg
+import alias
 
 import json
 import os
@@ -47,8 +48,7 @@ async def add_actor(message):
 
             # Escape command early.
             if stat_rsp.content == val.escape_value:
-                await s(message, st.ESCAPE)
-                return
+                return val.escape_value
 
             # List of checks to make sure their input makes sense.
             elif field != "NAME" and calc.is_int(stat_rsp.content):
@@ -288,6 +288,140 @@ async def request_of_user(message, request_str, formatter, expected_vars):
     if values[0] == val.escape_value:
         return val.escape_value
     return values
+
+
+async def perform_skill_roll(message):
+    """Performs a basic skill roll."""
+    # Request roll purpose.
+    purpose = await request_of_user(message, st.REQ_ROLL_PURPOSE,
+                                    format_none, expected_vars=1)
+    if purpose[0] == val.escape_value:
+        return s(message, st.ESCAPE)
+
+    # Find the related character.
+    actors_json = get_actors()
+    all_names = []
+    for name in actors_json:
+        all_names.append(name)
+    actors = await user_input_against_list(message, st.REQ_ACTIVE_ACTOR, all_names,
+                                           format_alpha, expected_vars=1)
+    if actors[0] == val.escape_value:
+        return s(message, st.ESCAPE)
+
+    # Request stats for roll.
+    stats = await user_input_against_aliases(message, st.REQ_STATS, alias.STATS_ALIASES,
+                                             format_alpha, expected_vars=2)
+    if stats[0] == val.escape_value:
+        return s(message, st.ESCAPE)
+
+    # Ensure we have the correct json object.
+    actors_json = actors_json[actors[0].title()]
+
+    # Retrieve mods.
+    mod = await ask_for_mods(message)
+    if actors[0] == val.escape_value:
+        return s(message, st.ESCAPE)
+
+    # Allocate mod particulates to proper locations.
+    mod_r = mod[0]  # Reasons
+    mod_v = mod[1]  # Values
+
+    # Complete the roll.
+    norm_stat_types = []
+    dice_pool = 0
+
+    # Collect roll information.
+    for stat in stats:
+        norm_stat_types.append(redeem_alias(stat, alias.STATS_ALIASES))
+
+    for stat in norm_stat_types:
+        dice_pool += int(actors_json[stat])
+
+    base_pool = dice_pool
+
+    for mod in mod_v:
+        dice_pool += int(mod)
+
+    # Roll the die and make the string.
+    successes = calc.skill_roll(dice_pool)
+    final_string = skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose,
+                                     norm_stat_types, stats, successes)
+
+    return final_string
+
+
+async def ask_for_mods(message):
+    """Asks the user if they would like to add modifications to a roll."""
+    # Define Lists
+    mod_r = []  # Reasons
+    mod_v = []  # Values
+
+    # Ask for confirmation on modifiers.
+    confirm = await user_input_against_aliases(message, st.ASK_IF_MODS, alias.CONFIRM_ALIASES,
+                                               format_alpha, expected_vars=1)
+    if confirm[0] == val.escape_value:
+        return val.escape_value
+
+    # Check confirm status.
+    while confirm[0].lower() in alias.AFFIRM:
+        # Request mod reason.
+        reason = await request_of_user(message, st.REQ_MOD_REASON,
+                                       format_none, expected_vars=1)
+        if reason[0] == val.escape_value:
+            return val.escape_value
+        mod_r.append(reason[0])
+
+        no_int = True  # No proper input yet given.
+
+        while no_int:
+            # Request mod amount.
+            amount = await request_of_user(message, st.REQ_MOD_AMOUNT,
+                                           format_numer, expected_vars=1)
+            if amount[0] == val.escape_value:
+                return val.escape_value
+            no_int = not calc.is_int(amount[0])
+            if no_int:
+                await s(message, st.INV_FORM)
+
+        mod_v.append(amount[0])
+
+        # Ask if more mods.
+        confirm = await user_input_against_aliases(message, st.ASK_IF_MORE_MODS, alias.CONFIRM_ALIASES,
+                                                   format_alpha, expected_vars=1)
+        if confirm[0] == val.escape_value:
+            return val.escape_value
+
+    return [mod_r, mod_v]
+
+
+def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_types, stats, successes):
+    """Formats a skill roll final string."""
+    if len(mod_r) > 0:
+        mod_s = "Modifiers: "
+        for i in range(len(mod_r)):
+            if i < len(mod_r) - 1:
+                mod_s += mod_r[i] + " "
+                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + "), "
+            else:
+                mod_s += mod_r[i] + " "
+                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + ") "
+    else:
+        mod_s = "No Modifiers."
+
+    if dice_pool > 0:
+        pool_s = ("Base Pool: " + str(base_pool) + " ==> Dice Pool: " + str(dice_pool) if dice_pool != base_pool
+                  else "Dice Pool: " + str(dice_pool))
+    else:
+        pool_s = "Luck Roll..."
+
+    final_string = \
+        "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
+                                    else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
+        + "> " + mod_s + '\n' \
+        + "> " + pool_s + '\n' \
+        + "> " + successes
+
+    return final_string
 
 
 # Syntactical Candy #
