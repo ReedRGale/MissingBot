@@ -4,7 +4,6 @@
 # Designed to handle rolls for the Missing RP #
 
 
-# TODO: Figure out what to decouple.
 # TODO: Figure out how to use inline to make more usable interfaces.
 
 
@@ -45,7 +44,7 @@ async def on_message(message):
 
     # # # # # # !forecast command # # # # # #
 
-    if message.content.startswith('!' + fc):
+    if message.content.startswith(val.command_prefix + fc):
         # Format: [dice_pool, forecast_successes]
 
         # TODO: Update to ask this in separated questions.
@@ -64,7 +63,7 @@ async def on_message(message):
 
     # # # # # # !newactor command # # # # # #
 
-    if message.content.startswith('!' + nr):
+    if message.content.startswith(val.command_prefix + nr):
 
         # Ask the questions and add the actor.
         e_nr = await util.add_actor(message)
@@ -75,7 +74,7 @@ async def on_message(message):
 
     # # # # # # !listactors command # # # # # #
 
-    if message.content.startswith('!' + lr):
+    if message.content.startswith(val.command_prefix + lr):
 
         # Load in file.
         actors = util.get_actors()
@@ -90,7 +89,7 @@ async def on_message(message):
 
     # # # # # # !skillroll command # # # # # #
 
-    if message.content.startswith('!' + sl):
+    if message.content.startswith(val.command_prefix + sl):
         # Format: <Type Command>
 
         # Begin the skill roll.
@@ -102,7 +101,7 @@ async def on_message(message):
 
     # # # # # # !help command # # # # # #
 
-    if message.content.startswith('!' + hp):
+    if message.content.startswith(val.command_prefix + hp):
 
         help_message = "Commands are currently as follows: \n\n"
 
