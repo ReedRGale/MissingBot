@@ -11,7 +11,6 @@
 # Import #
 
 import calc
-import alias
 import st
 import reg
 import val
