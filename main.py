@@ -126,14 +126,16 @@ async def on_message(message):
     if message.content.startswith(val.command_prefix + db):
         # Format: <relative>
 
-        # TODO: Test edit_message
-        # TODO: Test on_reaction
         # TODO: Test create_channel
         # TODO: Test mod bot ability to delete messages
         # TODO: Test making bot a mod of a specific channel
 
-        test = await util.request_of_user(message, "TESTING REGEX", util.format_numer, expected_vars=1)
-        return await s(message, test[0])
+        msg = await s(message, "I'll copy ur emoji fam")
+        test = await val.client.wait_for_reaction(message=msg)
+        test_str = '{0.reaction.emoji}'.format(test)
+        await val.client.edit_message(message=msg, new_content=test_str)
+
+        return await s(message, "That should work...")
 
 
 # Syntactical Candy #
