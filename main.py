@@ -1,4 +1,4 @@
-# Version 1.1.3
+# Version 1.1.4
 #
 #  ----------- Script by ReedRGale ----------- #
 # Designed to handle rolls for the Missing RP #
@@ -125,12 +125,14 @@ async def on_message(message):
 
     # # # # # # !debug command # # # # # #
 
-    if message.content.startswith('!' + db):
+    if message.content.startswith(val.command_prefix + db):
         # Format: <relative>
 
         # TODO: Test edit_message
         # TODO: Test on_reaction
         # TODO: Test create_channel
+        # TODO: Test mod bot ability to delete messages
+        # TODO: Test making bot a mod of a specific channel
 
         test = await util.request_of_user(message, "TESTING REGEX", util.format_numer, expected_vars=1)
         return await s(message, test[0])
