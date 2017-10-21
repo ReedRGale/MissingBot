@@ -5,11 +5,10 @@
 # Imports #
 
 
-import val
-import st
-
 import math
 import random
+
+from data import st, val
 
 
 # Helper Functions #

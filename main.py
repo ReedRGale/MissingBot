@@ -9,13 +9,11 @@
 
 # Import #
 
-import calc
-import st
-import reg
-import val
-import util
 
 import re
+
+from data import st, reg, val
+from output_func import calc, util
 
 
 # Events #
