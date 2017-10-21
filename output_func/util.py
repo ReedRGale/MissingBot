@@ -5,15 +5,12 @@
 
 # Import #
 
-import st
-import val
-import calc
-import reg
-import alias
-
 import json
 import os
 import re
+
+from data import st, alias, reg, val
+from output_func import calc
 
 
 def get_actors():
