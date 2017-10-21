@@ -1,0 +1,7 @@
+ex_server = message.server
+everyone = discord.PermissionOverwrite(read_messages=False)
+mine = discord.PermissionOverwrite(read_messages=True)
+await val.client.create_channel(ex_server, "Test_Server",
+                                (ex_server.default_role, everyone), (ex_server.me, mine))
+
+return await s(message, "Hidden channel created.")
