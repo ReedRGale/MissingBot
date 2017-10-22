@@ -29,7 +29,7 @@ def get_actors():
     return a
 
 
-async def add_actor(message):
+async def add_actor(m):
     """A function to store a JSON entry of a character"""
     # Ask for stat values.
     for field in val.focused_actor:
@@ -40,8 +40,8 @@ async def add_actor(message):
         while input_not_recorded:
 
             # Ask user for each field.
-            await s(message, st.REQ_ACTOR + field + " value:")
-            stat_rsp = await val.client.wait_for_message(author=message.author)
+            await s(m, st.REQ_ACTOR + field + " value:")
+            stat_rsp = await val.client.wait_for_message(author=m.author)
 
             # Escape command early.
             if stat_rsp.content == val.escape_value:
@@ -55,11 +55,11 @@ async def add_actor(message):
 
                 # Inform the user that -1 or less might be a bit low.
                 if not non_neg:
-                    await s(message, st.LT_ZERO)
+                    await s(m, st.LT_ZERO)
 
                 # Inform the user that 16 or more is too high.
                 if not lt_fift:
-                    await s(message, st.GT_FIFT)
+                    await s(m, st.GT_FIFT)
 
                 # User got it right, make sure to break this loop.
                 if non_neg and lt_fift:
@@ -72,7 +72,7 @@ async def add_actor(message):
                 input_not_recorded = False
 
             elif field != "NAME" and not calc.is_int(stat_rsp.content):
-                await s(message, st.INV_FORM)
+                await s(m, st.INV_FORM)
 
     # Make file if it doesn't exist.
     f = open("actors.txt", "a")
@@ -106,12 +106,12 @@ def redeem_alias(alias_i, aliases):
     return None
 
 
-async def user_input_against_aliases(message, request_str, aliases, formatter, expected_vars):
+async def user_input_against_aliases(m, request_str, aliases, formatter, expected_vars):
     """Compares a set of aliases [a dictionary of lists] to a list of values"""
     # Prime the pump.
     i = 0
     used = []
-    values = await request_of_user(message, request_str, formatter, expected_vars)
+    values = await request_of_user(m, request_str, formatter, expected_vars)
     if values[0] == val.escape_value:
         return val.escape_value
 
@@ -125,13 +125,13 @@ async def user_input_against_aliases(message, request_str, aliases, formatter, e
                     used.append(name)
                 elif alias.lower() == values[i].lower() and name in used:  # Alias found & used prev.
                     # Inform the user that they've repeated an argument.
-                    await s(message, st.REPEAT_ARG + values[i] + "!")
+                    await s(m, st.REPEAT_ARG + values[i] + "!")
                     invalid = False
 
                     # Reprime the pump.
                     i = 0
                     used = []
-                    values = await request_of_user(message, st.REPEAT, formatter, expected_vars)
+                    values = await request_of_user(m, st.REPEAT, formatter, expected_vars)
                     if values[0] == val.escape_value:
                         return val.escape_value
                     break
@@ -139,12 +139,12 @@ async def user_input_against_aliases(message, request_str, aliases, formatter, e
                 break
         if invalid:  # Alias unfound.
             # Inform the user that their argument is invalid.
-            await s(message, st.INV_ARG + values[i] + "!")
+            await s(m, st.INV_ARG + values[i] + "!")
 
             # Reprime the pump.
             i = 0
             used = []
-            values = await request_of_user(message, st.REPEAT, formatter, expected_vars)
+            values = await request_of_user(m, st.REPEAT, formatter, expected_vars)
             if values[0] == val.escape_value:
                 return val.escape_value
 
@@ -154,13 +154,13 @@ async def user_input_against_aliases(message, request_str, aliases, formatter, e
     return values
 
 
-async def user_input_against_list(message, request_str, comparators, formatter, expected_vars):
+async def user_input_against_list(m, request_str, comparators, formatter, expected_vars):
     """Compares a set of comparators to a list of values"""
 
     # Prime the pump.
     i = 0
     used = []
-    values = await request_of_user(message, request_str, formatter, expected_vars)
+    values = await request_of_user(m, request_str, formatter, expected_vars)
     if values[0] == val.escape_value:
         return val.escape_value
 
@@ -175,29 +175,29 @@ async def user_input_against_list(message, request_str, comparators, formatter, 
                 break
             elif comparator.lower() == values[i].lower() and comparator in used:  # Alias found & used prev.
                 # Inform the user that they've repeated an argument.
-                await s(message, st.REPEAT_ARG + values[i] + "! " + st.REPEAT)
+                await s(m, st.REPEAT_ARG + values[i] + "! " + st.REPEAT)
                 invalid = False
                 # Reprime the pump.
                 i = 0
                 used = []
-                values = await request_of_user(message, request_str, formatter, expected_vars)
+                values = await request_of_user(m, request_str, formatter, expected_vars)
                 if values[0] == val.escape_value:
                     return val.escape_value
                 break
         if invalid:  # Alias unfound.
             # Inform the user that their argument is invalid.
-            await s(message, st.INV_ARG + values[i] + "! " + st.REPEAT)
+            await s(m, st.INV_ARG + values[i] + "! " + st.REPEAT)
             # Reprime the pump.
             i = 0
             used = []
-            values = await request_of_user(message, request_str, formatter, expected_vars)
+            values = await request_of_user(m, request_str, formatter, expected_vars)
             if values[0] == val.escape_value:
                 return val.escape_value
 
     return values
 
 
-async def format_alpha(message, command_info, array, expected_vars):
+async def format_alpha(m, command_info, array, expected_vars):
     """A formatting helper method that makes sure that a string is only alphabetical."""
     improperly_formatted = True
 
@@ -207,14 +207,14 @@ async def format_alpha(message, command_info, array, expected_vars):
 
         # Escape command early.
         if command_info == val.escape_value:
-            await s(message, st.ESCAPE)
+            await s(m, st.ESCAPE)
             return val.escape_value
 
         # Check to make sure they didn't try to screw things up.
         if len(array) > expected_vars:
             improperly_formatted = True
-            await s(message, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
-            formatted_rsp = await val.client.wait_for_message(author=message.author, channel=message.channel)
+            await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
+            formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
         # Filter out non-alphabetic data
@@ -224,7 +224,7 @@ async def format_alpha(message, command_info, array, expected_vars):
     return array
 
 
-async def format_numer(message, command_info, array, expected_vars):
+async def format_numer(m, command_info, array, expected_vars):
     """A formatting helper method that makes sure that a string is only numeric."""
     improperly_formatted = True
 
@@ -234,14 +234,14 @@ async def format_numer(message, command_info, array, expected_vars):
 
         # Escape command early.
         if command_info == val.escape_value:
-            await s(message, st.ESCAPE)
+            await s(m, st.ESCAPE)
             return val.escape_value
 
         # Check to make sure they didn't try to screw things up.
         if len(array) > expected_vars:
             improperly_formatted = True
-            await s(message, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
-            formatted_rsp = await val.client.wait_for_message(author=message.author, channel=message.channel)
+            await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
+            formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
         # Filter out non-alphabetic data
@@ -251,8 +251,8 @@ async def format_numer(message, command_info, array, expected_vars):
     return array
 
 
-async def format_none(message, command_info, array, expected_vars=1):
-    """A formatting helper method that makes sure that a ser of values is only so many arguments."""
+async def format_none(m, command_info, array, expected_vars=1, log_op='>'):
+    """A formatting helper method that makes sure that a set of values is only so many arguments."""
     improperly_formatted = True
 
     while improperly_formatted:
@@ -261,36 +261,39 @@ async def format_none(message, command_info, array, expected_vars=1):
 
         # Escape command early.
         if command_info == val.escape_value:
-            await s(message, st.ESCAPE)
+            await s(m, st.ESCAPE)
             return val.escape_value
 
         single_statement = [""]
 
         # Concatenate if they had a comma. Basically, glue it back together. Elegiggle.
-        if len(array) > expected_vars:
+        if log_op == '>' and len(array) > expected_vars:
             for bucket in len(array):
-                single_statement[0] += bucket if bucket == len(array) else bucket + ','
+                single_statement[0] += bucket if bucket != len(array) - 1 else bucket + ','
+        elif log_op == '<' and len(array) < expected_vars:
+            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
+            improperly_formatted = True
         else:
             single_statement = array
 
     return single_statement
 
 
-async def request_of_user(message, request_str, formatter, expected_vars):
+async def request_of_user(message, request_str, formatter, expected_vars, log_op='>'):
     """Ask a request for the user and return that request as a list of inputs or return an escape character."""
     await s(message, request_str)
     rsp = await val.client.wait_for_message(author=message.author, channel=message.channel)
     values = rsp.content.split(',')
-    values = await formatter(message, rsp.content, values, expected_vars)
+    values = await formatter(message, rsp.content, values, expected_vars, log_op)
     if values[0] == val.escape_value:
         return val.escape_value
     return values
 
 
-async def perform_skill_roll(message):
+async def perform_skill_roll(m):
     """Performs a basic skill roll."""
     # Request roll purpose.
-    purpose = await request_of_user(message, st.REQ_ROLL_PURPOSE,
+    purpose = await request_of_user(m, st.REQ_ROLL_PURPOSE,
                                     format_none, expected_vars=1)
     if purpose[0] == val.escape_value:
         return val.escape_value
@@ -300,13 +303,13 @@ async def perform_skill_roll(message):
     all_names = []
     for name in actors_json:
         all_names.append(name)
-    actors = await user_input_against_list(message, st.REQ_ACTIVE_ACTOR, all_names,
+    actors = await user_input_against_list(m, st.REQ_ACTIVE_ACTOR, all_names,
                                            format_alpha, expected_vars=1)
     if actors[0] == val.escape_value:
         return val.escape_value
 
     # Request stats for roll.
-    stats = await user_input_against_aliases(message, st.REQ_STATS, alias.STATS_ALIASES,
+    stats = await user_input_against_aliases(m, st.REQ_STATS, alias.STATS_ALIASES,
                                              format_alpha, expected_vars=2)
     if stats[0] == val.escape_value:
         return val.escape_value
@@ -315,7 +318,7 @@ async def perform_skill_roll(message):
     actors_json = actors_json[actors[0].title()]
 
     # Retrieve mods.
-    mod = await ask_for_mods(message)
+    mod = await ask_for_mods(m)
     if actors[0] == val.escape_value:
         return val.escape_value
 
@@ -347,14 +350,14 @@ async def perform_skill_roll(message):
     return final_string
 
 
-async def ask_for_mods(message):
+async def ask_for_mods(m):
     """Asks the user if they would like to add modifications to a roll."""
     # Define Lists
     mod_r = []  # Reasons
     mod_v = []  # Values
 
     # Ask for confirmation on modifiers.
-    confirm = await user_input_against_aliases(message, st.ASK_IF_MODS, alias.CONFIRM_ALIASES,
+    confirm = await user_input_against_aliases(m, st.ASK_IF_MODS, alias.CONFIRM_ALIASES,
                                                format_alpha, expected_vars=1)
     if confirm[0] == val.escape_value:
         return val.escape_value
@@ -362,7 +365,7 @@ async def ask_for_mods(message):
     # Check confirm status.
     while confirm[0].lower() in alias.AFFIRM:
         # Request mod reason.
-        reason = await request_of_user(message, st.REQ_MOD_REASON,
+        reason = await request_of_user(m, st.REQ_MOD_REASON,
                                        format_none, expected_vars=1)
         if reason[0] == val.escape_value:
             return val.escape_value
@@ -372,18 +375,18 @@ async def ask_for_mods(message):
 
         while no_int:
             # Request mod amount.
-            amount = await request_of_user(message, st.REQ_MOD_AMOUNT,
+            amount = await request_of_user(m, st.REQ_MOD_AMOUNT,
                                            format_numer, expected_vars=1)
             if amount[0] == val.escape_value:
                 return val.escape_value
             no_int = not calc.is_int(amount[0])
             if no_int:
-                await s(message, st.INV_FORM)
+                await s(m, st.INV_FORM)
 
         mod_v.append(amount[0])
 
         # Ask if more mods.
-        confirm = await user_input_against_aliases(message, st.ASK_IF_MORE_MODS, alias.CONFIRM_ALIASES,
+        confirm = await user_input_against_aliases(m, st.ASK_IF_MORE_MODS, alias.CONFIRM_ALIASES,
                                                    format_alpha, expected_vars=1)
         if confirm[0] == val.escape_value:
             return val.escape_value
@@ -420,6 +423,26 @@ def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_typ
 
     return final_string
 
+
+async def reg_combat(m):
+    """Begins a combat by opening the relevant channels"""
+
+    # TODO: Check if canon exists.
+
+    canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
+    if canon == val.escape_value:
+        return val.escape_value
+
+    # TODO: Check if players exist.
+
+    players = await request_of_user(m, st.REQ_PLAYERS, format_none, expected_vars=2, log_op='<')
+    if players == val.escape_value:
+        return val.escape_value
+
+    # TODO: Send out confirmation to other players.
+    # TODO: Let all players know their channel exists.
+    # TODO: Make private channels and assign roles to given players/GM.
+    # TODO: Begin combat interface in each channel.
 
 # Syntactical Candy #
 

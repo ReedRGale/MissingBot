@@ -15,8 +15,8 @@ SUCCESS_VALUES = 4
 FAILURE_VALUES = 6
 DICE_SIZE = 10
 
-command_prefix = "~m "
-escape_value = "!"  # TODO: change this value and see if it still works.
+command_prefix = "~dd "
+escape_value = "~"  # TODO: change this value and see if it still works.
 focused_actor = {"NAME": "", "ATHLETICS": 0, "DEXTERITY": 0, "CHARISMA": 0, "ACADEMICS":  0, "SAVVY": 0}
 
 client = discord.Client()

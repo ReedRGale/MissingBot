@@ -28,7 +28,7 @@ async def on_ready():
 
 
 @val.client.event
-async def on_message(message):
+async def on_message(m):
 
     # List of commands.
     # TODO: !update to update an entry.
@@ -36,43 +36,45 @@ async def on_message(message):
     nr = "newactor"
     lr = "listactors"
     sl = "skillroll"
+    rt = "registercombat"
     hp = "help"
     db = "debug"
-    commands = [fc, nr, lr, sl, hp, db]
+    commands = [fc, nr, lr, sl, rt, hp, db]
 
     # # # # # # !forecast command # # # # # #
 
-    if message.content.startswith(val.command_prefix + fc):
+    if m.content.startswith(val.command_prefix + fc):
         # Format: [dice_pool, forecast_successes]
 
         # TODO: Update to ask this in separated questions.
+        # TODO: Fix the math.
 
-        args = message.content.split(',')
+        args = m.content.split(',')
 
         # Check to make sure they didn't try to screw things up.
         if len(args) > 3:
-            return await s(message, st.EXTRA_ARGS + '2')
+            return await s(m, st.EXTRA_ARGS + '2')
 
         # Filter out non-numeric data
         for i in range(0, 2):
             args[i] = re.sub(reg.non_numeric, '', args[i])
 
-        return await s(message, calc.percent(calc.calc_success(int(args[0]), int(args[1]))))
+        return await s(m, "This function isn't working.")
 
     # # # # # # !newactor command # # # # # #
 
-    if message.content.startswith(val.command_prefix + nr):
+    if m.content.startswith(val.command_prefix + nr):
 
         # Ask the questions and add the actor.
-        e_nr = await util.add_actor(message)
+        e_nr = await util.add_actor(m)
         if e_nr == val.escape_value:
-            return s(message, st.ESCAPE)
+            return s(m, st.ESCAPE)
 
-        return await s(message, st.SAVED)
+        return await s(m, st.SAVED)
 
     # # # # # # !listactors command # # # # # #
 
-    if message.content.startswith(val.command_prefix + lr):
+    if m.content.startswith(val.command_prefix + lr):
 
         # Load in file.
         actors = util.get_actors()
@@ -83,53 +85,65 @@ async def on_message(message):
         for name in actors:
             all_names += '► ' + name + '\n'
 
-        return await s(message, all_names)
+        return await s(m, all_names)
 
     # # # # # # !skillroll command # # # # # #
 
-    if message.content.startswith(val.command_prefix + sl):
+    if m.content.startswith(val.command_prefix + sl):
         # Format: <Type Command>
 
         # Begin the skill roll.
-        final_string = await util.perform_skill_roll(message)
+        final_string = await util.perform_skill_roll(m)
         if final_string == val.escape_value:
-            return s(message, st.ESCAPE)
+            return s(m, st.ESCAPE)
 
-        return await s(message, final_string)
+        return await s(m, final_string)
+
+    # # # # # # !registercombat command # # # # # #
+
+    if m.content.startswith(val.command_prefix + rt):
+        # Format: <Type Command>
+
+        e_rt = await util.reg_combat(m)
+        if e_rt == val.escape_value:
+            return s(m, st.ESCAPE)
+
+        return await s(m, st.DONE_INFORM + " " + st.rand_slack())
 
     # # # # # # !help command # # # # # #
 
-    if message.content.startswith(val.command_prefix + hp):
+    if m.content.startswith(val.command_prefix + hp):
+
+        # TODO: Make strings into constants and make the help messages into a map.
+        # TODO: Make all commands 'allcaps' to enforce the idea.
 
         help_message = "Commands are currently as follows: \n\n"
 
-        if fc in message.content:
+        if fc in m.content:
             help_message = st.FC_HELP
-        elif nr in message.content:
+        elif nr in m.content:
             help_message = st.NR_HELP
-        elif lr in message.content:
+        elif lr in m.content:
             help_message = st.LR_HELP
-        elif sl in message.content:
+        elif sl in m.content:
             help_message = st.SL_HELP
-        elif db in message.content:
+        elif rt in m.content:
+            help_message = st.SL_HELP
+        elif db in m.content:
             help_message = st.DB_HELP
         else:
             for command in commands:
                 help_message += command + '\n'
-            help_message += "For more information use !help followed by a command to get more information." \
+            help_message += "For more information use !help followed by a command to get more information. " \
                             "i.e. !help help."
 
-        return await s(message, help_message)
+        return await s(m, help_message)
 
     # # # # # # !debug command # # # # # #
 
-    if message.content.startswith(val.command_prefix + db):
+    if m.content.startswith(val.command_prefix + db):
         # Format: <relative>
-
-        # TODO: Test mod bot ability to delete messages
-        # TODO: Test bot ability to assign roles (create_role)
-
-        return await s(message, "I'm not testing anything right now.")
+        return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
 
 
 # Syntactical Candy #
