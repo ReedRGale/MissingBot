@@ -18,7 +18,7 @@ BROKEN_INFORM = "I know. It's broken. I'll get to it when I get to it."
 
 # Back to Slacking Off #
 
-
+UH = "...I see my name? You called but uh. I don't know what you want me to do. "
 A_SO = "...back to watching anime."
 B_SO = "Now, time to recalibrate the canons."
 C_SO = "If you'll excuse me, I'm going to toy with your character's stats. Promise I won't change them much. ;>"
@@ -80,7 +80,7 @@ INV_FORM = "Invalid. Once more, with feeling this time."
 LT_ZERO = "A stat can't be less than 0. And, let's be fair, do you really want it to be?"
 GT_FIFT = "A stat can't be greater than 15. And that's already obnoxiously high as it is."
 REPEAT = "Let's try that again."
-ESCAPE = "Escaping command..."
+ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
 
 
 # Other #

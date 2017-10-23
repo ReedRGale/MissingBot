@@ -43,7 +43,7 @@ async def on_message(m):
 
     # # # # # # !forecast command # # # # # #
 
-    if m.content.startswith(val.command_prefix + fc):
+    if m.content.startswith(val.command_prefix + " " + fc):
         # Format: [dice_pool, forecast_successes]
 
         # TODO: Update to ask this in separated questions.
@@ -59,11 +59,11 @@ async def on_message(m):
         for i in range(0, 2):
             args[i] = re.sub(reg.non_numeric, '', args[i])
 
-        return await s(m, "This function isn't working.")
+        return await s(m, st.BROKEN_INFORM + " " + st.rand_slack())
 
     # # # # # # !newactor command # # # # # #
 
-    if m.content.startswith(val.command_prefix + nr):
+    if m.content.startswith(val.command_prefix + " " + nr):
 
         # Ask the questions and add the actor.
         e_nr = await util.add_actor(m)
@@ -74,7 +74,7 @@ async def on_message(m):
 
     # # # # # # !listactors command # # # # # #
 
-    if m.content.startswith(val.command_prefix + lr):
+    if m.content.startswith(val.command_prefix + " " + lr):
 
         # Load in file.
         actors = util.get_actors()
@@ -89,7 +89,7 @@ async def on_message(m):
 
     # # # # # # !skillroll command # # # # # #
 
-    if m.content.startswith(val.command_prefix + sl):
+    if m.content.startswith(val.command_prefix + " " + sl):
         # Format: <Type Command>
 
         # Begin the skill roll.
@@ -101,7 +101,7 @@ async def on_message(m):
 
     # # # # # # !registercombat command # # # # # #
 
-    if m.content.startswith(val.command_prefix + rt):
+    if m.content.startswith(val.command_prefix + " " + rt):
         # Format: <Type Command>
 
         e_rt = await util.reg_combat(m)
@@ -112,7 +112,7 @@ async def on_message(m):
 
     # # # # # # !help command # # # # # #
 
-    if m.content.startswith(val.command_prefix + hp):
+    if m.content.startswith(val.command_prefix + " " + hp):
 
         # TODO: Make strings into constants and make the help messages into a map.
         # TODO: Make all commands 'allcaps' to enforce the idea.
@@ -141,9 +141,15 @@ async def on_message(m):
 
     # # # # # # !debug command # # # # # #
 
-    if m.content.startswith(val.command_prefix + db):
+    if m.content.startswith(val.command_prefix + " " + db):
         # Format: <relative>
         return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
+
+    # # # # # # ...character # # # # # #
+
+    if m.content.startswith(val.command_prefix):
+        # Format: <Fuck up command>
+        return await s(m, st.UH + " " + st.rand_slack())
 
 
 # Syntactical Candy #

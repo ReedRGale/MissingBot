@@ -197,8 +197,9 @@ async def user_input_against_list(m, request_str, comparators, formatter, expect
     return values
 
 
-async def format_alpha(m, command_info, array, expected_vars):
+async def format_alpha(m, command_info, array, expected_vars, log_op="<="):
     """A formatting helper method that makes sure that a string is only alphabetical."""
+    # Read log_op as:  I expect the arguments to be <log_op> <expected_vars>.
     improperly_formatted = True
 
     while improperly_formatted:
@@ -211,11 +212,17 @@ async def format_alpha(m, command_info, array, expected_vars):
             return val.escape_value
 
         # Check to make sure they didn't try to screw things up.
-        if len(array) > expected_vars:
+        if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
+        elif log_op == ">=" and len(array) < expected_vars:
+            improperly_formatted = True
+            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
+            formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
+            array = formatted_rsp.content.split(',')
+
 
         # Filter out non-alphabetic data
         for j in range(len(array)):
@@ -224,8 +231,9 @@ async def format_alpha(m, command_info, array, expected_vars):
     return array
 
 
-async def format_numer(m, command_info, array, expected_vars):
+async def format_numer(m, command_info, array, expected_vars, log_op='<='):
     """A formatting helper method that makes sure that a string is only numeric."""
+    # Read log_op as:  I expect the arguments to be <log_op> <expected_vars>.
     improperly_formatted = True
 
     while improperly_formatted:
@@ -238,9 +246,14 @@ async def format_numer(m, command_info, array, expected_vars):
             return val.escape_value
 
         # Check to make sure they didn't try to screw things up.
-        if len(array) > expected_vars:
+        if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
+            formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
+            array = formatted_rsp.content.split(',')
+        elif log_op == ">=" and len(array) < expected_vars:
+            improperly_formatted = True
+            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
@@ -251,8 +264,9 @@ async def format_numer(m, command_info, array, expected_vars):
     return array
 
 
-async def format_none(m, command_info, array, expected_vars=1, log_op='>'):
+async def format_none(m, command_info, array, expected_vars=1, log_op="<="):
     """A formatting helper method that makes sure that a set of values is only so many arguments."""
+    # Read log_op as:  I expect the arguments to be <log_op> <expected_vars>.
     improperly_formatted = True
 
     while improperly_formatted:
@@ -267,12 +281,14 @@ async def format_none(m, command_info, array, expected_vars=1, log_op='>'):
         single_statement = [""]
 
         # Concatenate if they had a comma. Basically, glue it back together. Elegiggle.
-        if log_op == '>' and len(array) > expected_vars:
+        if log_op == "<=" and len(array) > expected_vars:
             for bucket in len(array):
                 single_statement[0] += bucket if bucket != len(array) - 1 else bucket + ','
-        elif log_op == '<' and len(array) < expected_vars:
-            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
+        elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
+            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
+            formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
+            array = formatted_rsp.content.split(',')
         else:
             single_statement = array
 
@@ -435,8 +451,8 @@ async def reg_combat(m):
 
     # TODO: Check if players exist.
 
-    players = await request_of_user(m, st.REQ_PLAYERS, format_none, expected_vars=2, log_op='<')
-    if players == val.escape_value:
+    users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
+    if users == val.escape_value:
         return val.escape_value
 
     # TODO: Send out confirmation to other players.
