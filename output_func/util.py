@@ -15,6 +15,8 @@ from output_func import calc
 
 def get_actors():
     """Returns an object with all actor values in it."""
+    # TODO: Change actors.txt to be in a proper canon folder.
+
     # Make file if it doesn't exist.
     f = open("actors.txt", "a")
     f.close()
@@ -31,6 +33,8 @@ def get_actors():
 
 async def add_actor(m):
     """A function to store a JSON entry of a character"""
+    # TODO: Make sure you can't call this command unless you're the GM.
+
     # Ask for stat values.
     for field in val.focused_actor:
 
@@ -75,20 +79,12 @@ async def add_actor(m):
                 await s(m, st.INV_FORM)
 
     # Make file if it doesn't exist.
-    f = open("actors.txt", "a")
-    f.close()
-
-    # Pull JSON file for updating.
-    with open("actors.txt", "r") as fin:
-        if os.stat("actors.txt").st_size > 0:
-            actors = json.load(fin)
-        else:
-            actors = {}
-
-    # TODO: Make sure you can't write over characters unless you're the GM.
+    actors = get_actors()
 
     # Append actor to file.
     actors[val.focused_actor["NAME"]] = val.focused_actor
+
+    # TODO: Change actors.txt to be in a proper canon folder.
 
     # Update character file.
     with open("actors.txt", "w") as fout:
@@ -295,7 +291,7 @@ async def format_none(m, command_info, array, expected_vars=1, log_op="<="):
     return single_statement
 
 
-async def request_of_user(message, request_str, formatter, expected_vars, log_op='>'):
+async def request_of_user(message, request_str, formatter, expected_vars, log_op="<="):
     """Ask a request for the user and return that request as a list of inputs or return an escape character."""
     await s(message, request_str)
     rsp = await val.client.wait_for_message(author=message.author, channel=message.channel)
@@ -442,12 +438,13 @@ def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_typ
 
 async def reg_combat(m):
     """Begins a combat by opening the relevant channels"""
+    canon = ""
+    users = []
 
-    # TODO: Check if canon exists.
-
-    canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
-    if canon == val.escape_value:
-        return val.escape_value
+    while not canon_exists(canon):
+        canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
+        if canon == val.escape_value:
+            return val.escape_value
 
     # TODO: Check if players exist.
 
@@ -459,6 +456,24 @@ async def reg_combat(m):
     # TODO: Let all players know their channel exists.
     # TODO: Make private channels and assign roles to given players/GM.
     # TODO: Begin combat interface in each channel.
+
+
+def canon_exists(c_name):
+    """Helper method to check to see if a specfic canon exists."""
+    return os.path.exists("/data/canons/" + c_name)
+
+
+def players_exist(p_list):
+    """Helper method to check to see if a set of players exist."""
+    all_exist = True
+
+    for p in p_list:
+        if p not in val.client.get_all_members():
+            all_exist = False
+            break
+
+    return all_exist
+
 
 # Syntactical Candy #
 

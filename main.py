@@ -5,15 +5,16 @@
 
 
 # TODO: Figure out how to use inline to make more usable interfaces.
+# TODO: Record user aliases { member.name, member.nick, member.mention }
 
 
 # Import #
 
 
-import re, discord
+import re
 
 from data import st, reg, val
-from output_func import calc, util
+from output_func import util
 
 
 # Events #
@@ -32,6 +33,7 @@ async def on_message(m):
 
     # List of commands.
     # TODO: !update to update an entry.
+    # TODO: !newcanon to create a canon folder.
     fc = "forecast"
     nr = "newactor"
     lr = "listactors"
@@ -143,11 +145,13 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + db):
         # Format: <relative>
+        # Proved: You can reference members from mentions in messages by using member.mention.
+
         return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
 
     # # # # # # ...character # # # # # #
 
-    if m.content.startswith(val.command_prefix):
+    if m.content == val.command_prefix or m.content == val.command_prefix + " ":
         # Format: <Fuck up command>
         return await s(m, st.UH + " " + st.rand_slack())
 
