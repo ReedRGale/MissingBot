@@ -438,21 +438,29 @@ def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_typ
 
 async def reg_combat(m):
     """Begins a combat by opening the relevant channels"""
-    canon = ""
+    canon = '\n'
     users = []
 
+    # Check canon exists
     while not canon_exists(canon):
         canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
         if canon == val.escape_value:
             return val.escape_value
+        elif not canon_exists(canon):
+            await s(m, st.INV_FORM)
 
-    # TODO: Check if players exist.
+    # Check player exists
+    while not players_exist(users):
+        users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
+        if users == val.escape_value:
+            return val.escape_value
+        elif not players_exist(users):
+            await s(m, st.INV_FORM)
 
-    users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
-    if users == val.escape_value:
-        return val.escape_value
+    # Notify users
+    for u in users:
+        val.client.start_private_message(u)
 
-    # TODO: Send out confirmation to other players.
     # TODO: Let all players know their channel exists.
     # TODO: Make private channels and assign roles to given players/GM.
     # TODO: Begin combat interface in each channel.
@@ -468,11 +476,20 @@ def players_exist(p_list):
     all_exist = True
 
     for p in p_list:
-        if p not in val.client.get_all_members():
+        if p not in get_mentionable_names():
             all_exist = False
             break
 
     return all_exist
+
+
+def get_mentionable_names():
+    """Returns the pingable names of all players."""
+    m_mentionable = []
+    for mem in val.client.get_all_members():
+        m_mentionable.append(mem.mention)
+
+    return m_mentionable
 
 
 # Syntactical Candy #

@@ -145,7 +145,10 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + db):
         # Format: <relative>
-        # Proved: You can reference members from mentions in messages by using member.mention.
+        # Proved:
+        # You can reference members from mentions in messages by using member.mention.
+        # Learned:
+        # Users are a valid destination for send_message()
 
         return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
 
