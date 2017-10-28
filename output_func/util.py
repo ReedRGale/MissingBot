@@ -459,7 +459,8 @@ async def reg_combat(m):
 
     # Notify users
     for u in users:
-        val.client.start_private_message(u)
+        request = await val.client.send_message(u, st.ASK_IF_FIGHT)
+        # TODO: Use 'request' to ask a yes/no question
 
     # TODO: Let all players know their channel exists.
     # TODO: Make private channels and assign roles to given players/GM.

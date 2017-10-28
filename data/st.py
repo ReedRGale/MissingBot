@@ -8,6 +8,10 @@
 import random
 
 
+# TODO:  Make a random room name generator
+# TODO:  Make a room-word submission command
+
+
 # Informative Messages #
 
 
@@ -62,6 +66,7 @@ REQ_USER = "Now, which users are taking part in this 'glorious brawl?' You know 
            "list them all with at tags (@) and separate them with commas. Ah, do note that the GM is automatically " \
            "included. No need to worry there. \n\n " \
            "Ex: @DJ Dante , @ReedRGale"
+ASK_IF_FIGHT = "So, someone challenged you to combat. You gonna make that fight happen in canon?"
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 
@@ -81,6 +86,8 @@ LT_ZERO = "A stat can't be less than 0. And, let's be fair, do you really want i
 GT_FIFT = "A stat can't be greater than 15. And that's already obnoxiously high as it is."
 REPEAT = "Let's try that again."
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
+NOT_YES_OR_NO = "Sorry, that doesn't look affirmative or negatory, boss. If worst comes to worst, don't be creative. " \
+                "A simple 'yes' or 'no' would suffice. So once more. With feeling this time."
 
 
 # Other #

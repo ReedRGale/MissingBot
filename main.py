@@ -118,6 +118,7 @@ async def on_message(m):
 
         # TODO: Make strings into constants and make the help messages into a map.
         # TODO: Make all commands 'allcaps' to enforce the idea.
+        # TODO: Make help send the commands to the user in a private message.
 
         help_message = "Commands are currently as follows: \n\n"
 
