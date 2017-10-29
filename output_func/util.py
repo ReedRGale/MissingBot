@@ -9,6 +9,7 @@ import json
 import os
 import re
 
+from multiprocessing.pool import ThreadPool
 from data import st, alias, reg, val
 from output_func import calc
 
@@ -215,7 +216,7 @@ async def format_alpha(m, command_info, array, expected_vars, log_op="<="):
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
+            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
@@ -249,7 +250,7 @@ async def format_numer(m, command_info, array, expected_vars, log_op='<='):
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
+            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
@@ -282,13 +283,46 @@ async def format_none(m, command_info, array, expected_vars=1, log_op="<="):
                 single_statement[0] += bucket if bucket != len(array) - 1 else bucket + ','
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.NOT_ENOUGH_ARGS + ". Capiche? " + st.REPEAT)
+            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
         else:
             single_statement = array
 
     return single_statement
+
+
+async def format_strip(m, command_info, array, expected_vars, log_op='<='):
+    """A formatting helper method that makes sure that a string is only numeric."""
+    # Read log_op as:  I expect the arguments to be <log_op> <expected_vars>.
+    improperly_formatted = True
+
+    while improperly_formatted:
+        # Assume properly formatted until otherwise noted.
+        improperly_formatted = False
+
+        # Escape command early.
+        if command_info == val.escape_value:
+            await s(m, st.ESCAPE)
+            return val.escape_value
+
+        # Check to make sure they didn't try to screw things up.
+        if log_op == "<=" and len(array) > expected_vars:
+            improperly_formatted = True
+            await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
+            formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
+            array = formatted_rsp.content.split(',')
+        elif log_op == ">=" and len(array) < expected_vars:
+            improperly_formatted = True
+            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
+            formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
+            array = formatted_rsp.content.split(',')
+
+        # Filter out non-alphabetic data
+        for j in range(len(array)):
+            array[j] = array[j].strip()
+
+    return array
 
 
 async def request_of_user(message, request_str, formatter, expected_vars, log_op="<="):
@@ -444,23 +478,50 @@ async def reg_combat(m):
     # Check canon exists
     while not canon_exists(canon):
         canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
-        if canon == val.escape_value:
+        if canon[0] == val.escape_value:
             return val.escape_value
         elif not canon_exists(canon):
             await s(m, st.INV_FORM)
 
+    # TODO: Make this check by character, not player.
     # Check player exists
     while not players_exist(users):
         users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
-        if users == val.escape_value:
+        if users[0] == val.escape_value:
             return val.escape_value
         elif not players_exist(users):
             await s(m, st.INV_FORM)
 
+    # TODO: Decouple this.
+    # Collect all users
+    members = {}
+
+    for mem in val.client.get_all_members():
+        members[mem.mention] = mem
+
+    # TODO: Consider if any of this can be decoupled.
     # Notify users
+    async_results = {}
+
     for u in users:
-        request = await val.client.send_message(u, st.ASK_IF_FIGHT)
-        # TODO: Use 'request' to ask a yes/no question
+        test = await val.client.send_message(members[u], st.ASK_IF_FIGHT)
+        pool = ThreadPool()
+        async_results[u] = pool.apply_async(wait_for_combat_affirmation, (members[u], test.channel))
+
+    # Process results...
+    accounted_for = []
+    queued = []
+    borked = False
+
+    while async_results and not borked:
+        for i in range(len(users)):
+            if async_results[users[i]].get() in alias.AFFIRM:
+                queued.append(i)
+            elif async_results[users[i]].get() in alias.DENY:
+                borked = True
+        for v in queued:
+            accounted_for.append(users[v])
+            del users[v]
 
     # TODO: Let all players know their channel exists.
     # TODO: Make private channels and assign roles to given players/GM.
@@ -491,6 +552,24 @@ def get_mentionable_names():
         m_mentionable.append(mem.mention)
 
     return m_mentionable
+
+
+async def wait_for_combat_affirmation(author, channel):
+    """Method to encapsulate all parts of asking if someone is joining in a combat."""
+    affirmed = None
+
+    # TODO: Change request_of_user to hide more in this function.
+    # It'll need to ask for author and channel.
+
+    # Go until confirmation acquired.
+    while not affirmed:
+        affirmed = await val.client.wait_for_message(author=author, channel=channel)
+        affirmed = affirmed.content
+        if affirmed.lower() not in alias.AFFIRM and affirmed.lower() not in alias.DENY:
+            affirmed = None
+            await s(affirmed, st.NOT_YES_OR_NO)
+
+    return affirmed
 
 
 # Syntactical Candy #

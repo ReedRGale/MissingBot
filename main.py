@@ -6,6 +6,7 @@
 
 # TODO: Figure out how to use inline to make more usable interfaces.
 # TODO: Record user aliases { member.name, member.nick, member.mention }
+# TODO: Log every command in a way that is reasonable
 
 
 # Import #
@@ -13,6 +14,7 @@
 
 import re
 
+from multiprocessing.pool import ThreadPool
 from data import st, reg, val
 from output_func import util
 
@@ -67,6 +69,8 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + nr):
 
+        # TODO: Change to ask for player if GM
+        # TODO: Change to add player as character's maker if not GM
         # Ask the questions and add the actor.
         e_nr = await util.add_actor(m)
         if e_nr == val.escape_value:
@@ -146,12 +150,32 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + db):
         # Format: <relative>
-        # Proved:
-        # You can reference members from mentions in messages by using member.mention.
-        # Learned:
-        # Users are a valid destination for send_message()
 
-        return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
+        # Learned:
+        # You can reference members from mentions in messages by using member.mention.
+        # Users are a valid destination for send_message()
+        # Await will wait on that thread until the end of time; no branching messages
+        # The bot can only proceed linearly for each callback performed.
+        # Multithreading can circumvent the linear nature of the bot's callbacks.
+
+        members = {}
+
+        for mem in val.client.get_all_members():
+            members[mem.mention] = mem
+
+        users = await util.request_of_user(m, st.REQ_USER, util.format_strip, expected_vars=2, log_op=">=")
+
+        async_results = {}
+
+        for u in users:
+            test = await val.client.send_message(members[u], "Respond with anything!")
+            pool = ThreadPool(processes=2)
+            async_results[u] = pool.apply_async(val.client.wait_for_message, (),
+                                                {"author": members[u], "channel": test.channel})
+
+        return await s(m, async_results[users[0]].get())
+
+        # return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
 
     # # # # # # ...character # # # # # #
 
