@@ -1,4 +1,4 @@
-# Version 1.1.4
+# Version 1.1.5
 #
 #  ----------- Script by ReedRGale ----------- #
 # Designed to handle rolls for the Missing RP #
@@ -14,9 +14,8 @@
 
 import re
 
-from multiprocessing.pool import ThreadPool
-from data import st, reg, val
-from output_func import util
+from model import st, reg, val
+from controller import util
 
 
 # Events #
@@ -35,42 +34,40 @@ async def on_message(m):
 
     # List of commands.
     # TODO: !update to update an entry.
-    # TODO: !newcanon to create a canon folder.
     fc = "forecast"
-    nr = "newactor"
+    nr = "newcharacter"
     lr = "listactors"
     sl = "skillroll"
     rt = "registercombat"
+    nn = "newcanon"
     hp = "help"
     db = "debug"
     commands = [fc, nr, lr, sl, rt, hp, db]
 
-    # # # # # # !forecast command # # # # # #
+    # # # # # # forecast command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + fc):
         # Format: [dice_pool, forecast_successes]
-
-        # TODO: Update to ask this in separated questions.
-        # TODO: Fix the math.
 
         args = m.content.split(',')
 
         # Check to make sure they didn't try to screw things up.
         if len(args) > 3:
-            return await s(m, st.EXTRA_ARGS + '2')
+            return await s(m, st.ERR_EXTRA_ARGS + '2')
 
         # Filter out non-numeric data
         for i in range(0, 2):
             args[i] = re.sub(reg.non_numeric, '', args[i])
 
-        return await s(m, st.BROKEN_INFORM + " " + st.rand_slack())
+        return await s(m, st.INF_BROKEN + " " + st.rand_slack())
 
-    # # # # # # !newactor command # # # # # #
+    # # # # # # newactor command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + nr):
 
         # TODO: Change to ask for player if GM
         # TODO: Change to add player as character's maker if not GM
+        # TODO: Set limit on characters a player can make
         # Ask the questions and add the actor.
         e_nr = await util.add_actor(m)
         if e_nr == val.escape_value:
@@ -78,7 +75,7 @@ async def on_message(m):
 
         return await s(m, st.SAVED)
 
-    # # # # # # !listactors command # # # # # #
+    # # # # # # listactors command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + lr):
 
@@ -93,7 +90,7 @@ async def on_message(m):
 
         return await s(m, all_names)
 
-    # # # # # # !skillroll command # # # # # #
+    # # # # # # skillroll command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + sl):
         # Format: <Type Command>
@@ -105,7 +102,7 @@ async def on_message(m):
 
         return await s(m, final_string)
 
-    # # # # # # !registercombat command # # # # # #
+    # # # # # # registercombat command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + rt):
         # Format: <Type Command>
@@ -114,9 +111,20 @@ async def on_message(m):
         if e_rt == val.escape_value:
             return s(m, st.ESCAPE)
 
-        return await s(m, st.DONE_INFORM + " " + st.rand_slack())
+        return await s(m, st.INF_DONE + " " + st.rand_slack())
 
-    # # # # # # !help command # # # # # #
+    # # # # # # newcanon command # # # # # #
+
+    if m.content.startswith(val.command_prefix + " " + nn):
+        # Format: <Type Command>
+
+        status = await util.make_canon(m)
+        if status == val.escape_value:
+            return s(m, st.ESCAPE)
+
+        return await s(m, status + " " + st.rand_slack())
+
+    # # # # # # help command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + hp):
 
@@ -146,7 +154,7 @@ async def on_message(m):
 
         return await s(m, help_message)
 
-    # # # # # # !debug command # # # # # #
+    # # # # # # debug command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + db):
         # Format: <relative>
@@ -158,24 +166,7 @@ async def on_message(m):
         # The bot can only proceed linearly for each callback performed.
         # Multithreading can circumvent the linear nature of the bot's callbacks.
 
-        members = {}
-
-        for mem in val.client.get_all_members():
-            members[mem.mention] = mem
-
-        users = await util.request_of_user(m, st.REQ_USER, util.format_strip, expected_vars=2, log_op=">=")
-
-        async_results = {}
-
-        for u in users:
-            test = await val.client.send_message(members[u], "Respond with anything!")
-            pool = ThreadPool(processes=2)
-            async_results[u] = pool.apply_async(val.client.wait_for_message, (),
-                                                {"author": members[u], "channel": test.channel})
-
-        return await s(m, async_results[users[0]].get())
-
-        # return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
+        return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
 
     # # # # # # ...character # # # # # #
 

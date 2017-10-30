@@ -8,7 +8,7 @@
 import math
 import random
 
-from data import st, val
+from model import st, val
 
 
 # Helper Functions #

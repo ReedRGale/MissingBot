@@ -11,8 +11,8 @@ import re
 import discord
 
 from multiprocessing.pool import ThreadPool
-from data import st, alias, reg, val
-from output_func import calc
+from model import st, alias, reg, val
+from controller import calc
 
 
 def get_actors():
@@ -35,8 +35,6 @@ def get_actors():
 
 async def add_actor(m):
     """A function to store a JSON entry of a character"""
-    # TODO: Make sure you can't call this command unless you're the GM.
-
     # Ask for stat values.
     for field in val.focused_actor:
 
@@ -46,10 +44,8 @@ async def add_actor(m):
         while input_not_recorded:
 
             # Ask user for each field.
-            await s(m, st.REQ_ACTOR + field + " value:")
+            await s(m, st.REQ_CHARACTER + field + " value:")
             stat_rsp = await val.client.wait_for_message(author=m.author)
-
-            # Escape command early.
             if stat_rsp.content == val.escape_value:
                 return val.escape_value
 
@@ -61,11 +57,11 @@ async def add_actor(m):
 
                 # Inform the user that -1 or less might be a bit low.
                 if not non_neg:
-                    await s(m, st.LT_ZERO)
+                    await s(m, st.ERR_STAT_LT_ZERO)
 
                 # Inform the user that 16 or more is too high.
                 if not lt_fift:
-                    await s(m, st.GT_FIFT)
+                    await s(m, st.ERR_STAT_GT_FIFT)
 
                 # User got it right, make sure to break this loop.
                 if non_neg and lt_fift:
@@ -78,7 +74,7 @@ async def add_actor(m):
                 input_not_recorded = False
 
             elif field != "NAME" and not calc.is_int(stat_rsp.content):
-                await s(m, st.INV_FORM)
+                await s(m, st.ERR_INV_FORM)
 
     # Make file if it doesn't exist.
     actors = get_actors()
@@ -123,13 +119,13 @@ async def user_input_against_aliases(m, request_str, aliases, formatter, expecte
                     used.append(name)
                 elif alias.lower() == values[i].lower() and name in used:  # Alias found & used prev.
                     # Inform the user that they've repeated an argument.
-                    await s(m, st.REPEAT_ARG + values[i] + "!")
+                    await s(m, st.ERR_REPEAT_ARG + values[i] + "!")
                     invalid = False
 
                     # Reprime the pump.
                     i = 0
                     used = []
-                    values = await request_of_user(m, st.REPEAT, formatter, expected_vars)
+                    values = await request_of_user(m, st.ERR_REPEAT, formatter, expected_vars)
                     if values[0] == val.escape_value:
                         return val.escape_value
                     break
@@ -137,12 +133,12 @@ async def user_input_against_aliases(m, request_str, aliases, formatter, expecte
                 break
         if invalid:  # Alias unfound.
             # Inform the user that their argument is invalid.
-            await s(m, st.INV_ARG + values[i] + "!")
+            await s(m, st.ERR_INV_ARG + values[i] + "!")
 
             # Reprime the pump.
             i = 0
             used = []
-            values = await request_of_user(m, st.REPEAT, formatter, expected_vars)
+            values = await request_of_user(m, st.ERR_REPEAT, formatter, expected_vars)
             if values[0] == val.escape_value:
                 return val.escape_value
 
@@ -173,7 +169,7 @@ async def user_input_against_list(m, request_str, comparators, formatter, expect
                 break
             elif comparator.lower() == values[i].lower() and comparator in used:  # Alias found & used prev.
                 # Inform the user that they've repeated an argument.
-                await s(m, st.REPEAT_ARG + values[i] + "! " + st.REPEAT)
+                await s(m, st.ERR_REPEAT_ARG + values[i] + "! " + st.ERR_REPEAT)
                 invalid = False
                 # Reprime the pump.
                 i = 0
@@ -184,7 +180,7 @@ async def user_input_against_list(m, request_str, comparators, formatter, expect
                 break
         if invalid:  # Alias unfound.
             # Inform the user that their argument is invalid.
-            await s(m, st.INV_ARG + values[i] + "! " + st.REPEAT)
+            await s(m, st.ERR_INV_ARG + values[i] + "! " + st.ERR_REPEAT)
             # Reprime the pump.
             i = 0
             used = []
@@ -212,12 +208,12 @@ async def format_alpha(m, command_info, array, expected_vars, log_op="<="):
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
-            await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
+            await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
+            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
@@ -246,12 +242,12 @@ async def format_numer(m, command_info, array, expected_vars, log_op='<='):
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
-            await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
+            await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
+            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
@@ -284,7 +280,7 @@ async def format_none(m, command_info, array, expected_vars=1, log_op="<="):
                 single_statement[0] += bucket if bucket != len(array) - 1 else bucket + ','
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
+            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
         else:
@@ -310,12 +306,12 @@ async def format_strip(m, command_info, array, expected_vars, log_op='<='):
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
-            await s(m, st.EXTRA_ARGS + str(expected_vars) + " or less. " + st.REPEAT)
+            await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.REPEAT)
+            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT)
             formatted_rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
             array = formatted_rsp.content.split(',')
 
@@ -350,7 +346,7 @@ async def perform_skill_roll(m):
     all_names = []
     for name in actors_json:
         all_names.append(name)
-    actors = await user_input_against_list(m, st.REQ_ACTIVE_ACTOR, all_names,
+    actors = await user_input_against_list(m, st.REQ_ACTIVE_CHARACTER, all_names,
                                            format_alpha, expected_vars=1)
     if actors[0] == val.escape_value:
         return val.escape_value
@@ -428,7 +424,7 @@ async def ask_for_mods(m):
                 return val.escape_value
             no_int = not calc.is_int(amount[0])
             if no_int:
-                await s(m, st.INV_FORM)
+                await s(m, st.ERR_INV_FORM)
 
         mod_v.append(amount[0])
 
@@ -482,7 +478,7 @@ async def reg_combat(m):
         if canon[0] == val.escape_value:
             return val.escape_value
         elif not canon_exists(canon):
-            await s(m, st.INV_FORM)
+            await s(m, st.ERR_INV_FORM)
 
     # TODO: Make this check by character, not player.
     # TODO: Add the GM if not already in the list.
@@ -492,7 +488,7 @@ async def reg_combat(m):
         if users[0] == val.escape_value:
             return val.escape_value
         elif not players_exist(users):
-            await s(m, st.INV_FORM)
+            await s(m, st.ERR_INV_FORM)
 
     # Collect all users
     members = get_member_dict()
@@ -533,7 +529,7 @@ async def reg_combat(m):
 
 def canon_exists(c_name):
     """Helper method to check to see if a specfic canon exists."""
-    return os.path.exists("/data/canons/" + c_name)
+    return os.path.exists("/model/canons/" + c_name)
 
 
 def players_exist(p_list):
@@ -580,10 +576,30 @@ async def wait_for_combat_affirmation(author, channel):
         affirmed = affirmed.content
         if affirmed.lower() not in alias.AFFIRM and affirmed.lower() not in alias.DENY:
             affirmed = None
-            await s(affirmed, st.NOT_YES_OR_NO)
+            await s(affirmed, st.ERR_NOT_YES_OR_NO)
 
     return affirmed
 
+
+async def make_canon(m):
+    """Makes a canon folder and files."""
+    # Ask for RP name
+    canon = await request_of_user(m, st.REQ_NEW_CANON, format_none, expected_vars=1)
+    if canon[0] == val.escape_value:
+        return val.escape_value
+
+    # Make folder and initial docs
+    canon_dir = "model\\canons\\" + canon[0]
+    if not os.path.exists(canon_dir):
+        os.makedirs(canon_dir)
+        open(canon_dir + '\\' + st.CHARACTERS_FILENAME, 'a').close()
+        open(canon_dir + '\\' + st.LOGS_FILENAME, 'a').close()
+        open(canon_dir + '\\' + st.RULES_FILENAME, 'a').close()
+        status = st.INF_CANON_MADE
+    else:
+        status = st.ERR_CANON_EXISTS
+
+    return status
 
 # Syntactical Candy #
 
