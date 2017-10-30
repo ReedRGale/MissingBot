@@ -69,7 +69,7 @@ async def on_message(m):
         # TODO: Change to add player as character's maker if not GM
         # TODO: Set limit on characters a player can make
         # Ask the questions and add the actor.
-        e_nr = await util.add_actor(m)
+        e_nr = await util.add_character(m)
         if e_nr == val.escape_value:
             return s(m, st.ESCAPE)
 
@@ -80,7 +80,7 @@ async def on_message(m):
     if m.content.startswith(val.command_prefix + " " + lr):
 
         # Load in file.
-        actors = util.get_actors()
+        actors = util.get_characters()
 
         # Concatenate all names.
         all_names = "Character Names: \n"

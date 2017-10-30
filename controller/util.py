@@ -15,17 +15,11 @@ from model import st, alias, reg, val
 from controller import calc
 
 
-def get_actors():
-    """Returns an object with all actor values in it."""
-    # TODO: Change actors.txt to be in a proper canon folder.
-
-    # Make file if it doesn't exist.
-    f = open("actors.txt", "a")
-    f.close()
-
+def get_characters():
+    """Returns an object with all character values in it."""
     # Pull JSON file for reading.
-    with open("actors.txt", "r") as fin:
-        if os.stat("actors.txt").st_size > 0:
+    with open(val.relevant_canon + "\\" + st.CHARACTERS_FILENAME, "a") as fin:
+        if os.stat(val.relevant_canon + "\\" + st.CHARACTERS_FILENAME).st_size > 0:
             a = json.load(fin)
         else:
             a = {}
@@ -33,10 +27,10 @@ def get_actors():
     return a
 
 
-async def add_actor(m):
+async def add_character(m):
     """A function to store a JSON entry of a character"""
     # Ask for stat values.
-    for field in val.focused_actor:
+    for field in val.focused_character:
 
         input_not_recorded = True
 
@@ -65,28 +59,26 @@ async def add_actor(m):
 
                 # User got it right, make sure to break this loop.
                 if non_neg and lt_fift:
-                    val.focused_actor[field] = stat_rsp.content
+                    val.focused_character[field] = stat_rsp.content
                     input_not_recorded = False
 
             elif field == "NAME":
                 # Store the name of the character.
-                val.focused_actor[field] = stat_rsp.content
+                val.focused_character[field] = stat_rsp.content
                 input_not_recorded = False
 
             elif field != "NAME" and not calc.is_int(stat_rsp.content):
                 await s(m, st.ERR_INV_FORM)
 
     # Make file if it doesn't exist.
-    actors = get_actors()
+    characters = get_characters()
 
-    # Append actor to file.
-    actors[val.focused_actor["NAME"]] = val.focused_actor
-
-    # TODO: Change actors.txt to be in a proper canon folder.
+    # Append character to file.
+    characters[val.focused_character["NAME"]] = val.focused_character
 
     # Update character file.
-    with open("actors.txt", "w") as fout:
-        json.dump(actors, fout, indent=1)
+    with open(val.relevant_canon + "\\" + st.CHARACTERS_FILENAME, "w") as fout:
+        json.dump(characters, fout, indent=1)
 
 
 def redeem_alias(alias_i, aliases):
@@ -342,13 +334,13 @@ async def perform_skill_roll(m):
         return val.escape_value
 
     # Find the related character.
-    actors_json = get_actors()
+    characters_json = get_characters()
     all_names = []
-    for name in actors_json:
+    for name in characters_json:
         all_names.append(name)
-    actors = await user_input_against_list(m, st.REQ_ACTIVE_CHARACTER, all_names,
+    characters = await user_input_against_list(m, st.REQ_ACTIVE_CHARACTER, all_names,
                                            format_alpha, expected_vars=1)
-    if actors[0] == val.escape_value:
+    if characters[0] == val.escape_value:
         return val.escape_value
 
     # Request stats for roll.
@@ -358,11 +350,11 @@ async def perform_skill_roll(m):
         return val.escape_value
 
     # Ensure we have the correct json object.
-    actors_json = actors_json[actors[0].title()]
+    characters_json = characters_json[characters[0].title()]
 
     # Retrieve mods.
     mod = await ask_for_mods(m)
-    if actors[0] == val.escape_value:
+    if characters[0] == val.escape_value:
         return val.escape_value
 
     # Allocate mod particulates to proper locations.
@@ -378,7 +370,7 @@ async def perform_skill_roll(m):
         norm_stat_types.append(redeem_alias(stat, alias.STATS_ALIASES))
 
     for stat in norm_stat_types:
-        dice_pool += int(actors_json[stat])
+        dice_pool += int(characters_json[stat])
 
     base_pool = dice_pool
 
