@@ -8,6 +8,7 @@
 import json
 import os
 import re
+import discord
 
 from multiprocessing.pool import ThreadPool
 from data import st, alias, reg, val
@@ -471,7 +472,7 @@ def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_typ
 
 
 async def reg_combat(m):
-    """Begins a combat by opening the relevant channels"""
+    """Begins a combat by opening the relevant channels"""  # TODO: Test this.
     canon = '\n'
     users = []
 
@@ -484,6 +485,7 @@ async def reg_combat(m):
             await s(m, st.INV_FORM)
 
     # TODO: Make this check by character, not player.
+    # TODO: Add the GM if not already in the list.
     # Check player exists
     while not players_exist(users):
         users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
@@ -492,24 +494,19 @@ async def reg_combat(m):
         elif not players_exist(users):
             await s(m, st.INV_FORM)
 
-    # TODO: Decouple this.
     # Collect all users
-    members = {}
+    members = get_member_dict()
 
-    for mem in val.client.get_all_members():
-        members[mem.mention] = mem
-
-    # TODO: Consider if any of this can be decoupled.
     # Notify users
     async_results = {}
 
     for u in users:
-        test = await val.client.send_message(members[u], st.ASK_IF_FIGHT)
+        priv = await val.client.send_message(members[u], st.ASK_IF_FIGHT)
         pool = ThreadPool()
-        async_results[u] = pool.apply_async(wait_for_combat_affirmation, (members[u], test.channel))
+        async_results[u] = pool.apply_async(wait_for_combat_affirmation, (members[u], priv.channel))
 
     # Process results...
-    accounted_for = []
+    accounted_for = []  # TODO: Add the player who called the command.
     queued = []
     borked = False
 
@@ -523,8 +520,14 @@ async def reg_combat(m):
             accounted_for.append(users[v])
             del users[v]
 
-    # TODO: Let all players know their channel exists.
-    # TODO: Make private channels and assign roles to given players/GM.
+    for af in accounted_for:
+        # Make private channels and assign roles to given players/GM.
+        everyone = discord.PermissionOverwrite(read_messages=False)
+        theirs = discord.PermissionOverwrite(read_messages=True)
+        await val.client.create_channel(m.server, "Test_Server",
+                                        (m.server.default_role, everyone), (members[af], theirs))
+        await val.client.send_message(members[af], st.INF_CHANNELS_MADE)
+
     # TODO: Begin combat interface in each channel.
 
 
@@ -552,6 +555,16 @@ def get_mentionable_names():
         m_mentionable.append(mem.mention)
 
     return m_mentionable
+
+
+def get_member_dict():
+    """Returns a member dictionary linked to member.mention instances."""
+    members = {}
+
+    for mem in val.client.get_all_members():
+        members[mem.mention] = mem
+
+    return members
 
 
 async def wait_for_combat_affirmation(author, channel):

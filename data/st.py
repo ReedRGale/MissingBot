@@ -89,6 +89,11 @@ ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
 NOT_YES_OR_NO = "Sorry, that doesn't look affirmative or negatory, boss. If worst comes to worst, don't be creative. " \
                 "A simple 'yes' or 'no' would suffice. So once more. With feeling this time."
 
+# Informative #
+
+INF_CHANNELS_MADE = "Alright bud, I think things are set in place. Your private combat channel is made " \
+                    "and should be called: "
+
 
 # Other #
 
