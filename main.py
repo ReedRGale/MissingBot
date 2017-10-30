@@ -27,11 +27,11 @@ async def on_ready():
     print(val.client.user.name)
     print(val.client.user.id)
     print('------')
+    # TODO: Load in player prefs each time the bot starts.
 
 
 @val.client.event
 async def on_message(m):
-
     # List of commands.
     # TODO: !update to update an entry.
     fc = "forecast"
@@ -40,6 +40,7 @@ async def on_message(m):
     sl = "skillroll"
     rt = "registercombat"
     nn = "newcanon"
+    rn = "relevantcanon"
     hp = "help"
     db = "debug"
     commands = [fc, nr, lr, sl, rt, hp, db]
@@ -119,6 +120,17 @@ async def on_message(m):
         # Format: <Type Command>
 
         status = await util.make_canon(m)
+        if status == val.escape_value:
+            return s(m, st.ESCAPE)
+
+        return await s(m, status + " " + st.rand_slack())
+
+    # # # # # # relevantcanon command # # # # # #
+
+    if m.content.startswith(val.command_prefix + " " + rn):
+        # Format: <Type Command>
+
+        status = await util.set_relevant_canon(m)
         if status == val.escape_value:
             return s(m, st.ESCAPE)
 

@@ -18,8 +18,8 @@ from controller import calc
 def get_characters():
     """Returns an object with all character values in it."""
     # Pull JSON file for reading.
-    with open(val.relevant_canon + "\\" + st.CHARACTERS_FILENAME, "a") as fin:
-        if os.stat(val.relevant_canon + "\\" + st.CHARACTERS_FILENAME).st_size > 0:
+    with open(val.rel_canon + "\\" + st.CHARACTERS_FILENAME, "a") as fin:
+        if os.stat(val.rel_canon + "\\" + st.CHARACTERS_FILENAME).st_size > 0:
             a = json.load(fin)
         else:
             a = {}
@@ -77,7 +77,7 @@ async def add_character(m):
     characters[val.focused_character["NAME"]] = val.focused_character
 
     # Update character file.
-    with open(val.relevant_canon + "\\" + st.CHARACTERS_FILENAME, "w") as fout:
+    with open(val.rel_canon + "\\" + st.CHARACTERS_FILENAME, "w") as fout:
         json.dump(characters, fout, indent=1)
 
 
@@ -464,7 +464,7 @@ async def reg_combat(m):
     canon = '\n'
     users = []
 
-    # Check canon exists
+    # Check canon exists.
     while not canon_exists(canon):
         canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
         if canon[0] == val.escape_value:
@@ -474,7 +474,7 @@ async def reg_combat(m):
 
     # TODO: Make this check by character, not player.
     # TODO: Add the GM if not already in the list.
-    # Check player exists
+    # Check player exists.
     while not players_exist(users):
         users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
         if users[0] == val.escape_value:
@@ -482,10 +482,10 @@ async def reg_combat(m):
         elif not players_exist(users):
             await s(m, st.ERR_INV_FORM)
 
-    # Collect all users
+    # Collect all users.
     members = get_member_dict()
 
-    # Notify users
+    # Notify users.
     async_results = {}
 
     for u in users:
@@ -592,6 +592,25 @@ async def make_canon(m):
         status = st.ERR_CANON_EXISTS
 
     return status
+
+
+async def set_relevant_canon(m):
+    """Sets the relevant canon for the character."""
+    # Ask for RP name
+    canon = await request_of_user(m, st.REQ_REL_CANON, format_none, expected_vars=1)
+    if canon[0] == val.escape_value:
+        return val.escape_value
+
+    # TODO: Check to make sure that this user has characters in that canon
+    canon_dir = "model\\canons\\" + canon[0]
+    if os.path.exists(canon_dir):
+        val.rel_canon = canon_dir
+        status = st.INF_CANON_SET
+    else:
+        status = st.ERR_CANON_NONEXIST
+
+    return status
+
 
 # Syntactical Candy #
 

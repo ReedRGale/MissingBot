@@ -21,6 +21,7 @@ INF_BROKEN = "I know. It's broken. I'll get to it when I get to it."
 INF_CHANNELS_MADE = "Alright bud, I think things are set in place. Your private combat channel is made " \
                     "and should be called: "
 INF_CANON_MADE = "All the paperwork is in order. Enjoy the new world, I guess."
+INF_CANON_SET = "Well, here you are. Enjoy your stay or something."
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
@@ -31,11 +32,11 @@ ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
 UH = "...I see my name? You called but uh. I don't know what you want me to do. "
 A_SO = "\n\n...back to watching anime."
 B_SO = "Now, time to recalibrate the canons."
-C_SO = "If you'll excuse me, I'm going to toy with your character's stats. Promise I won't change them much. ;>"
+C_SO = "Now, if you'll excuse me, I'm going to toy with your character's stats. Promise I won't change them much. ;>"
 D_SO = "Now buzz off. I've got 'important' things to get to. ...I'm just messing with you, I've got nothing but time."
 E_SO = "But, uh, come back when you have something interesting for me to do, 'kay?"
 F_SO = "Well, another day, another five-billion commands to handle."
-G_SO = "Man, I live the good life. Bossed around, yet underworked and overpaid. Just how I like it."
+G_SO = "\n\n...man, I live the good life. Bossed around, yet underworked and overpaid. Just how I like it."
 ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO]
 
 
@@ -71,6 +72,7 @@ REQ_USER = "Now, which users are taking part in this 'glorious brawl?' You know 
            "list them all with at tags (@) and separate them with commas. Ah, do note that the GM is automatically " \
            "included. No need to worry there. \n\n " \
            "Ex: @DJ Dante , @ReedRGale"
+REQ_REL_CANON = "Alright, so what canon is your poison today?"
 
 
 # Confirmations #
@@ -89,8 +91,8 @@ ERR_REPEAT = "Let's try that again."
 ERR_EXTRA_ARGS = "Whoa there pardner. That's a lot of arguments. Try to keep it to around "
 ERR_NOT_ENOUGH_ARGS = "Hey. Buddy. You need at least this many arguments to use this command: "
 ERR_PLAYER_NONEXIST = "Yo. So... uh... I don't know how to put this nicely. But... that player doesn't... exist? Yeah."
-ERR_CANON_NONEXIST = "These worlds aren't real, but this one you just said exists less than the other " \
-                 "worlds that don't exist. That is, I don't have it in my records."
+ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one you just wrote exists less than the other " \
+                     "worlds that don't exist. That is, I don't have it in my records."
 ERR_INV_ARG = "Sorry, don't know that keyword "
 ERR_REPEAT_ARG = "You've already used the keyword "
 ERR_INV_FORM = "Invalid. Once more, with feeling this time."
