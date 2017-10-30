@@ -36,7 +36,7 @@ async def on_message(m):
     # TODO: !update to update an entry.
     fc = "forecast"
     nr = "newcharacter"
-    lr = "listactors"
+    lr = "listcharacters"
     sl = "skillroll"
     rt = "registercombat"
     nn = "newcanon"
@@ -61,31 +61,31 @@ async def on_message(m):
 
         return await s(m, st.INF_BROKEN + " " + st.rand_slack())
 
-    # # # # # # newactor command # # # # # #
+    # # # # # # newcharacter command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + nr):
 
         # TODO: Change to ask for player if GM
         # TODO: Change to add player as character's maker if not GM
         # TODO: Set limit on characters a player can make
-        # Ask the questions and add the actor.
+        # Ask the questions and add the character.
         e_nr = await util.add_character(m)
         if e_nr == val.escape_value:
             return s(m, st.ESCAPE)
 
         return await s(m, st.SAVED)
 
-    # # # # # # listactors command # # # # # #
+    # # # # # # listcharacters command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + lr):
 
         # Load in file.
-        actors = util.get_characters()
+        characters = util.get_characters()
 
         # Concatenate all names.
         all_names = "Character Names: \n"
 
-        for name in actors:
+        for name in characters:
             all_names += '► ' + name + '\n'
 
         return await s(m, all_names)
