@@ -334,6 +334,7 @@ async def perform_skill_roll(m):
         return val.escape_value
 
     # Find the related character.
+    # TODO: Skip this if relevant character is set for player.
     characters_json = get_characters()
     all_names = []
     for name in characters_json:
