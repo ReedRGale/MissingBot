@@ -15,20 +15,40 @@ from model import st, alias, reg, val
 from controller import calc
 
 
-def get_characters():
-    """Returns an object with all character values in it."""
-    # Pull JSON file for reading.
-    with open(val.rel_canon + "\\" + st.CHARACTERS_FILENAME, "a") as fin:
-        if os.stat(val.rel_canon + "\\" + st.CHARACTERS_FILENAME).st_size > 0:
-            a = json.load(fin)
-        else:
-            a = {}
+# Command Encapsulations #
 
-    return a
+
+async def make_canon(m):
+    """Makes a canon folder and files."""
+    # Ask for RP name
+    canon = await request_of_user(m, st.REQ_NEW_CANON, format_none, expected_vars=1)
+    if canon[0] == val.escape_value:
+        return val.escape_value
+
+    # TODO: Make a player-prefs folder per canon
+    # TODO: Make relevant channels
+    # TODO: Store channel preferences
+    # TODO: Figure out how to group RP channels
+    # Make folder and initial docs
+    canon_dir = "model\\canons\\" + canon[0]
+    if not os.path.exists(canon_dir):
+        os.makedirs(canon_dir)
+        open(canon_dir + '\\' + st.CHARACTERS_FILENAME, 'a').close()
+        open(canon_dir + '\\' + st.LOGS_FILENAME, 'a').close()
+        open(canon_dir + '\\' + st.RULES_FILENAME, 'a').close()
+        status = st.INF_CANON_MADE
+    else:
+        status = st.ERR_CANON_EXISTS
+
+    return status
 
 
 async def add_character(m):
     """A function to store a JSON entry of a character"""
+    # TODO: Change to ask for player if GM
+    # TODO: Change to add player as character's maker if not GM
+    # TODO: Set limit on characters a player can make
+
     # Ask for stat values.
     for field in val.focused_character:
 
@@ -81,106 +101,150 @@ async def add_character(m):
         json.dump(characters, fout, indent=1)
 
 
-def redeem_alias(alias_i, aliases):
-    """Returns the normalized form (first element in the list) of an alias value"""
-    # Compare alias to other aliases
-    for alias in aliases:
-        for value in aliases[alias]:
-            if value.lower() == alias_i.lower():
-                return aliases[alias][0]
-
-    return None
-
-
-async def user_input_against_aliases(m, request_str, aliases, formatter, expected_vars):
-    """Compares a set of aliases [a dictionary of lists] to a list of values"""
-    # Prime the pump.
-    i = 0
-    used = []
-    values = await request_of_user(m, request_str, formatter, expected_vars)
-    if values[0] == val.escape_value:
+async def perform_skill_roll(m):
+    """Performs a basic skill roll."""
+    # Request roll purpose.
+    purpose = await request_of_user(m, st.REQ_ROLL_PURPOSE,
+                                    format_none, expected_vars=1)
+    if purpose[0] == val.escape_value:
         return val.escape_value
 
-    # For each possible alias, check that the names the user input are valid.
-    while i < len(values):
-        invalid = True
-        for name in aliases:
-            for alias in aliases[name]:
-                if alias.lower() == values[i].lower() and name not in used:  # Alias found & not used prev.
-                    invalid = False
-                    used.append(name)
-                elif alias.lower() == values[i].lower() and name in used:  # Alias found & used prev.
-                    # Inform the user that they've repeated an argument.
-                    await s(m, st.ERR_REPEAT_ARG + values[i] + "!")
-                    invalid = False
-
-                    # Reprime the pump.
-                    i = 0
-                    used = []
-                    values = await request_of_user(m, st.ERR_REPEAT, formatter, expected_vars)
-                    if values[0] == val.escape_value:
-                        return val.escape_value
-                    break
-            if not invalid:
-                break
-        if invalid:  # Alias unfound.
-            # Inform the user that their argument is invalid.
-            await s(m, st.ERR_INV_ARG + values[i] + "!")
-
-            # Reprime the pump.
-            i = 0
-            used = []
-            values = await request_of_user(m, st.ERR_REPEAT, formatter, expected_vars)
-            if values[0] == val.escape_value:
-                return val.escape_value
-
-        else:  # Otherwise, alias found; continue.
-            i += 1
-
-    return values
-
-
-async def user_input_against_list(m, request_str, comparators, formatter, expected_vars):
-    """Compares a set of comparators to a list of values"""
-
-    # Prime the pump.
-    i = 0
-    used = []
-    values = await request_of_user(m, request_str, formatter, expected_vars)
-    if values[0] == val.escape_value:
+    # Find the related character.
+    # TODO: Skip this if relevant character is set for player.
+    characters_json = get_characters()
+    all_names = []
+    for name in characters_json:
+        all_names.append(name)
+    characters = await user_input_against_list(m, st.REQ_ACTIVE_CHARACTER, all_names,
+                                           format_alpha, expected_vars=1)
+    if characters[0] == val.escape_value:
         return val.escape_value
 
-    # For each possible alias, check that the names the user input are valid.
-    while i < len(values):
-        invalid = True
-        for comparator in comparators:
-            if comparator.lower() == values[i].lower() and comparator not in used:  # Alias found & not used prev.
-                invalid = False
-                used.append(comparator)
-                i += 1
-                break
-            elif comparator.lower() == values[i].lower() and comparator in used:  # Alias found & used prev.
-                # Inform the user that they've repeated an argument.
-                await s(m, st.ERR_REPEAT_ARG + values[i] + "! " + st.ERR_REPEAT)
-                invalid = False
-                # Reprime the pump.
-                i = 0
-                used = []
-                values = await request_of_user(m, request_str, formatter, expected_vars)
-                if values[0] == val.escape_value:
-                    return val.escape_value
-                break
-        if invalid:  # Alias unfound.
-            # Inform the user that their argument is invalid.
-            await s(m, st.ERR_INV_ARG + values[i] + "! " + st.ERR_REPEAT)
-            # Reprime the pump.
-            i = 0
-            used = []
-            values = await request_of_user(m, request_str, formatter, expected_vars)
-            if values[0] == val.escape_value:
-                return val.escape_value
+    # Request stats for roll.
+    stats = await user_input_against_aliases(m, st.REQ_STATS, alias.STATS_ALIASES,
+                                             format_alpha, expected_vars=2)
+    if stats[0] == val.escape_value:
+        return val.escape_value
 
-    return values
+    # Ensure we have the correct json object.
+    characters_json = characters_json[characters[0].title()]
+
+    # Retrieve mods.
+    mod = await ask_for_mods(m)
+    if characters[0] == val.escape_value:
+        return val.escape_value
+
+    # Allocate mod particulates to proper locations.
+    mod_r = mod[0]  # Reasons
+    mod_v = mod[1]  # Values
+
+    # Complete the roll.
+    norm_stat_types = []
+    dice_pool = 0
+
+    # Collect roll information.
+    for stat in stats:
+        norm_stat_types.append(redeem_alias(stat, alias.STATS_ALIASES))
+
+    for stat in norm_stat_types:
+        dice_pool += int(characters_json[stat])
+
+    base_pool = dice_pool
+
+    for mod in mod_v:
+        dice_pool += int(mod)
+
+    # Roll the die and make the string.
+    successes = calc.skill_roll(dice_pool)
+    final_string = skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose,
+                                     norm_stat_types, stats, successes)
+
+    return final_string
+
+
+async def reg_combat(m):
+    """Begins a combat by opening the relevant channels"""  # TODO: Test this.
+    canon = '\n'
+    users = []
+
+    # Check canon exists.
+    while not canon_exists(canon):
+        canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
+        if canon[0] == val.escape_value:
+            return val.escape_value
+        elif not canon_exists(canon):
+            await s(m, st.ERR_INV_FORM)
+
+    # TODO: Make this check by character, not player.
+    # TODO: Add the GM if not already in the list.
+    # Check player exists.
+    while not players_exist(users):
+        users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
+        if users[0] == val.escape_value:
+            return val.escape_value
+        elif not players_exist(users):
+            await s(m, st.ERR_INV_FORM)
+
+    # Collect all users.
+    members = get_member_dict()
+
+    # Notify users.
+    async_results = {}
+
+    for u in users:
+        priv = await val.client.send_message(members[u], st.ASK_IF_FIGHT)
+        pool = ThreadPool()
+        async_results[u] = pool.apply_async(wait_for_combat_affirmation, (members[u], priv.channel))
+
+    # Process results...
+    accounted_for = []  # TODO: Add the player who called the command.
+    queued = []
+    borked = False
+
+    while async_results and not borked:
+        for i in range(len(users)):
+            if async_results[users[i]].get() in alias.AFFIRM:
+                queued.append(i)
+            elif async_results[users[i]].get() in alias.DENY:
+                borked = True
+        for v in queued:
+            accounted_for.append(users[v])
+            del users[v]
+
+    for af in accounted_for:
+        # Make private channels and assign roles to given players/GM.
+        everyone = discord.PermissionOverwrite(read_messages=False)
+        theirs = discord.PermissionOverwrite(read_messages=True)
+        await val.client.create_channel(m.server, "Test_Server",
+                                        (m.server.default_role, everyone), (members[af], theirs))
+        await val.client.send_message(members[af], st.INF_CHANNELS_MADE)
+
+    # TODO: Begin combat interface in each channel.
+
+
+async def set_relevant_canon(m):
+    """Sets the relevant canon for the character."""
+    # TODO: Deprecate this; Hes had a better idea:
+    # Make the relevant canon linked to the channel itself.
+
+    # Ask for RP name
+    canon = await request_of_user(m, st.REQ_REL_CANON, format_none, expected_vars=1)
+    if canon[0] == val.escape_value:
+        return val.escape_value
+
+    # TODO: Check to make sure that this user has characters in that canon
+    # TODO: Make certain channels visible and other channels invisible
+    canon_dir = "model\\canons\\" + canon[0]
+    if os.path.exists(canon_dir):
+        val.rel_canon = canon_dir
+        status = st.INF_CANON_SET
+    else:
+        status = st.ERR_CANON_NONEXIST
+
+    return status
+
+
+# Formatters #
 
 
 async def format_alpha(m, command_info, array, expected_vars, log_op="<="):
@@ -314,74 +378,104 @@ async def format_strip(m, command_info, array, expected_vars, log_op='<='):
     return array
 
 
-async def request_of_user(message, request_str, formatter, expected_vars, log_op="<="):
-    """Ask a request for the user and return that request as a list of inputs or return an escape character."""
-    await s(message, request_str)
-    rsp = await val.client.wait_for_message(author=message.author, channel=message.channel)
-    values = rsp.content.split(',')
-    values = await formatter(message, rsp.content, values, expected_vars, log_op)
-    if values[0] == val.escape_value:
-        return val.escape_value
-    return values
+# Utility #
 
 
-async def perform_skill_roll(m):
-    """Performs a basic skill roll."""
-    # Request roll purpose.
-    purpose = await request_of_user(m, st.REQ_ROLL_PURPOSE,
-                                    format_none, expected_vars=1)
-    if purpose[0] == val.escape_value:
-        return val.escape_value
+def make_general_player_prefs():
+    """Initializes the player prefs if they don't exist."""
+    # TODO: Make generalized folder for general player-prefs
+    # Make folder and initial docs
+    prefs_dir = r"model\general\playerprefs"
+    if not os.path.exists(prefs_dir):
+        os.makedirs(prefs_dir)
 
-    # Find the related character.
-    # TODO: Skip this if relevant character is set for player.
-    characters_json = get_characters()
-    all_names = []
-    for name in characters_json:
-        all_names.append(name)
-    characters = await user_input_against_list(m, st.REQ_ACTIVE_CHARACTER, all_names,
-                                           format_alpha, expected_vars=1)
-    if characters[0] == val.escape_value:
-        return val.escape_value
+    return status
 
-    # Request stats for roll.
-    stats = await user_input_against_aliases(m, st.REQ_STATS, alias.STATS_ALIASES,
-                                             format_alpha, expected_vars=2)
-    if stats[0] == val.escape_value:
-        return val.escape_value
 
-    # Ensure we have the correct json object.
-    characters_json = characters_json[characters[0].title()]
+def get_characters():
+    """Returns an object with all character values in it."""
+    # Pull JSON file for reading.
+    with open(val.rel_canon + "\\" + st.CHARACTERS_FILENAME, "a") as fin:
+        if os.stat(val.rel_canon + "\\" + st.CHARACTERS_FILENAME).st_size > 0:
+            a = json.load(fin)
+        else:
+            a = {}
 
-    # Retrieve mods.
-    mod = await ask_for_mods(m)
-    if characters[0] == val.escape_value:
-        return val.escape_value
+    return a
 
-    # Allocate mod particulates to proper locations.
-    mod_r = mod[0]  # Reasons
-    mod_v = mod[1]  # Values
 
-    # Complete the roll.
-    norm_stat_types = []
-    dice_pool = 0
+def redeem_alias(alias_i, aliases):
+    """Returns the normalized form (first element in the list) of an alias value"""
+    # Compare alias to other aliases
+    for alias in aliases:
+        for value in aliases[alias]:
+            if value.lower() == alias_i.lower():
+                return aliases[alias][0]
+    return None
 
-    # Collect roll information.
-    for stat in stats:
-        norm_stat_types.append(redeem_alias(stat, alias.STATS_ALIASES))
 
-    for stat in norm_stat_types:
-        dice_pool += int(characters_json[stat])
+def get_mentionable_names():
+    """Returns the pingable names of all players."""
+    m_mentionable = []
+    for mem in val.client.get_all_members():
+        m_mentionable.append(mem.mention)
 
-    base_pool = dice_pool
+    return m_mentionable
 
-    for mod in mod_v:
-        dice_pool += int(mod)
 
-    # Roll the die and make the string.
-    successes = calc.skill_roll(dice_pool)
-    final_string = skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose,
-                                     norm_stat_types, stats, successes)
+def get_member_dict():
+    """Returns a member dictionary linked to member.mention instances."""
+    members = {}
+
+    for mem in val.client.get_all_members():
+        members[mem.mention] = mem
+
+    return members
+
+
+def players_exist(p_list):
+    """Helper method to check to see if a set of players exist."""
+    all_exist = True
+
+    for p in p_list:
+        if p not in get_mentionable_names():
+            all_exist = False
+            break
+
+    return all_exist
+
+
+def canon_exists(c_name):
+    """Helper method to check to see if a specfic canon exists."""
+    return os.path.exists("/model/canons/" + c_name)
+
+
+def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_types, stats, successes):
+    """Formats a skill roll final string."""
+    if len(mod_r) > 0:
+        mod_s = "Modifiers: "
+        for i in range(len(mod_r)):
+            if i < len(mod_r) - 1:
+                mod_s += mod_r[i] + " "
+                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + "), "
+            else:
+                mod_s += mod_r[i] + " "
+                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + ") "
+    else:
+        mod_s = "No Modifiers."
+
+    if dice_pool > 0:
+        pool_s = ("Base Pool: " + str(base_pool) + " ==> Dice Pool: " + str(dice_pool) if dice_pool != base_pool
+                  else "Dice Pool: " + str(dice_pool))
+    else:
+        pool_s = "Luck Roll..."
+
+    final_string = \
+        "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
+                                    else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
+        + "> " + mod_s + '\n' \
+        + "> " + pool_s + '\n' \
+        + "> " + successes
 
     return final_string
 
@@ -430,130 +524,95 @@ async def ask_for_mods(m):
     return [mod_r, mod_v]
 
 
-def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_types, stats, successes):
-    """Formats a skill roll final string."""
-    if len(mod_r) > 0:
-        mod_s = "Modifiers: "
-        for i in range(len(mod_r)):
-            if i < len(mod_r) - 1:
-                mod_s += mod_r[i] + " "
-                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + "), "
-            else:
-                mod_s += mod_r[i] + " "
-                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + ") "
-    else:
-        mod_s = "No Modifiers."
+async def user_input_against_aliases(m, request_str, aliases, formatter, expected_vars):
+    """Compares a set of aliases [a dictionary of lists] to a list of values"""
+    # Prime the pump.
+    i = 0
+    used = []
+    values = await request_of_user(m, request_str, formatter, expected_vars)
+    if values[0] == val.escape_value:
+        return val.escape_value
 
-    if dice_pool > 0:
-        pool_s = ("Base Pool: " + str(base_pool) + " ==> Dice Pool: " + str(dice_pool) if dice_pool != base_pool
-                  else "Dice Pool: " + str(dice_pool))
-    else:
-        pool_s = "Luck Roll..."
+    # For each possible alias, check that the names the user input are valid.
+    while i < len(values):
+        invalid = True
+        for name in aliases:
+            for alias in aliases[name]:
+                if alias.lower() == values[i].lower() and name not in used:  # Alias found & not used prev.
+                    invalid = False
+                    used.append(name)
+                elif alias.lower() == values[i].lower() and name in used:  # Alias found & used prev.
+                    # Inform the user that they've repeated an argument.
+                    await s(m, st.ERR_REPEAT_ARG + values[i] + "!")
+                    invalid = False
 
-    final_string = \
-        "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
-                                    else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
-        + "> " + mod_s + '\n' \
-        + "> " + pool_s + '\n' \
-        + "> " + successes
+                    # Reprime the pump.
+                    i = 0
+                    used = []
+                    values = await request_of_user(m, st.ERR_REPEAT, formatter, expected_vars)
+                    if values[0] == val.escape_value:
+                        return val.escape_value
+                    break
+            if not invalid:
+                break
+        if invalid:  # Alias unfound.
+            # Inform the user that their argument is invalid.
+            await s(m, st.ERR_INV_ARG + values[i] + "!")
 
-    return final_string
+            # Reprime the pump.
+            i = 0
+            used = []
+            values = await request_of_user(m, st.ERR_REPEAT, formatter, expected_vars)
+            if values[0] == val.escape_value:
+                return val.escape_value
 
+        else:  # Otherwise, alias found; continue.
+            i += 1
 
-async def reg_combat(m):
-    """Begins a combat by opening the relevant channels"""  # TODO: Test this.
-    canon = '\n'
-    users = []
-
-    # Check canon exists.
-    while not canon_exists(canon):
-        canon = await request_of_user(m, st.REQ_CANON, format_none, expected_vars=1)
-        if canon[0] == val.escape_value:
-            return val.escape_value
-        elif not canon_exists(canon):
-            await s(m, st.ERR_INV_FORM)
-
-    # TODO: Make this check by character, not player.
-    # TODO: Add the GM if not already in the list.
-    # Check player exists.
-    while not players_exist(users):
-        users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
-        if users[0] == val.escape_value:
-            return val.escape_value
-        elif not players_exist(users):
-            await s(m, st.ERR_INV_FORM)
-
-    # Collect all users.
-    members = get_member_dict()
-
-    # Notify users.
-    async_results = {}
-
-    for u in users:
-        priv = await val.client.send_message(members[u], st.ASK_IF_FIGHT)
-        pool = ThreadPool()
-        async_results[u] = pool.apply_async(wait_for_combat_affirmation, (members[u], priv.channel))
-
-    # Process results...
-    accounted_for = []  # TODO: Add the player who called the command.
-    queued = []
-    borked = False
-
-    while async_results and not borked:
-        for i in range(len(users)):
-            if async_results[users[i]].get() in alias.AFFIRM:
-                queued.append(i)
-            elif async_results[users[i]].get() in alias.DENY:
-                borked = True
-        for v in queued:
-            accounted_for.append(users[v])
-            del users[v]
-
-    for af in accounted_for:
-        # Make private channels and assign roles to given players/GM.
-        everyone = discord.PermissionOverwrite(read_messages=False)
-        theirs = discord.PermissionOverwrite(read_messages=True)
-        await val.client.create_channel(m.server, "Test_Server",
-                                        (m.server.default_role, everyone), (members[af], theirs))
-        await val.client.send_message(members[af], st.INF_CHANNELS_MADE)
-
-    # TODO: Begin combat interface in each channel.
+    return values
 
 
-def canon_exists(c_name):
-    """Helper method to check to see if a specfic canon exists."""
-    return os.path.exists("/model/canons/" + c_name)
+async def user_input_against_list(m, request_str, comparators, formatter, expected_vars):
+    """Compares a set of comparators to a list of values"""
 
+    # Prime the pump.
+    i = 0
+    used = []
+    values = await request_of_user(m, request_str, formatter, expected_vars)
+    if values[0] == val.escape_value:
+        return val.escape_value
 
-def players_exist(p_list):
-    """Helper method to check to see if a set of players exist."""
-    all_exist = True
+    # For each possible alias, check that the names the user input are valid.
+    while i < len(values):
+        invalid = True
+        for comparator in comparators:
+            if comparator.lower() == values[i].lower() and comparator not in used:  # Alias found & not used prev.
+                invalid = False
+                used.append(comparator)
+                i += 1
+                break
+            elif comparator.lower() == values[i].lower() and comparator in used:  # Alias found & used prev.
+                # Inform the user that they've repeated an argument.
+                await s(m, st.ERR_REPEAT_ARG + values[i] + "! " + st.ERR_REPEAT)
+                invalid = False
+                # Reprime the pump.
+                i = 0
+                used = []
+                values = await request_of_user(m, request_str, formatter, expected_vars)
+                if values[0] == val.escape_value:
+                    return val.escape_value
+                break
+        if invalid:  # Alias unfound.
+            # Inform the user that their argument is invalid.
+            await s(m, st.ERR_INV_ARG + values[i] + "! " + st.ERR_REPEAT)
+            # Reprime the pump.
+            i = 0
+            used = []
+            values = await request_of_user(m, request_str, formatter, expected_vars)
+            if values[0] == val.escape_value:
+                return val.escape_value
 
-    for p in p_list:
-        if p not in get_mentionable_names():
-            all_exist = False
-            break
-
-    return all_exist
-
-
-def get_mentionable_names():
-    """Returns the pingable names of all players."""
-    m_mentionable = []
-    for mem in val.client.get_all_members():
-        m_mentionable.append(mem.mention)
-
-    return m_mentionable
-
-
-def get_member_dict():
-    """Returns a member dictionary linked to member.mention instances."""
-    members = {}
-
-    for mem in val.client.get_all_members():
-        members[mem.mention] = mem
-
-    return members
+    return values
 
 
 async def wait_for_combat_affirmation(author, channel):
@@ -574,43 +633,15 @@ async def wait_for_combat_affirmation(author, channel):
     return affirmed
 
 
-async def make_canon(m):
-    """Makes a canon folder and files."""
-    # Ask for RP name
-    canon = await request_of_user(m, st.REQ_NEW_CANON, format_none, expected_vars=1)
-    if canon[0] == val.escape_value:
+async def request_of_user(message, request_str, formatter, expected_vars, log_op="<="):
+    """Ask a request for the user and return that request as a list of inputs or return an escape character."""
+    await s(message, request_str)
+    rsp = await val.client.wait_for_message(author=message.author, channel=message.channel)
+    values = rsp.content.split(',')
+    values = await formatter(message, rsp.content, values, expected_vars, log_op)
+    if values[0] == val.escape_value:
         return val.escape_value
-
-    # Make folder and initial docs
-    canon_dir = "model\\canons\\" + canon[0]
-    if not os.path.exists(canon_dir):
-        os.makedirs(canon_dir)
-        open(canon_dir + '\\' + st.CHARACTERS_FILENAME, 'a').close()
-        open(canon_dir + '\\' + st.LOGS_FILENAME, 'a').close()
-        open(canon_dir + '\\' + st.RULES_FILENAME, 'a').close()
-        status = st.INF_CANON_MADE
-    else:
-        status = st.ERR_CANON_EXISTS
-
-    return status
-
-
-async def set_relevant_canon(m):
-    """Sets the relevant canon for the character."""
-    # Ask for RP name
-    canon = await request_of_user(m, st.REQ_REL_CANON, format_none, expected_vars=1)
-    if canon[0] == val.escape_value:
-        return val.escape_value
-
-    # TODO: Check to make sure that this user has characters in that canon
-    canon_dir = "model\\canons\\" + canon[0]
-    if os.path.exists(canon_dir):
-        val.rel_canon = canon_dir
-        status = st.INF_CANON_SET
-    else:
-        status = st.ERR_CANON_NONEXIST
-
-    return status
+    return values
 
 
 # Syntactical Candy #

@@ -65,10 +65,6 @@ async def on_message(m):
     # # # # # # newcharacter command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + nr):
-
-        # TODO: Change to ask for player if GM
-        # TODO: Change to add player as character's maker if not GM
-        # TODO: Set limit on characters a player can make
         # Ask the questions and add the character.
         e_nr = await util.add_character(m)
         if e_nr == val.escape_value:
@@ -118,6 +114,8 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + nn):
         # Format: <Type Command>
+        # TODO: Ask for GM
+        # TODO: Send private message asking permission if the GM isn't the user calling the command.
 
         status = await util.make_canon(m)
         if status == val.escape_value:
