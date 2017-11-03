@@ -22,22 +22,11 @@ INF_CHANNELS_MADE = "Alright bud, I think things are set in place. Your private 
                     "and should be called: "
 INF_CANON_MADE = "All the paperwork is in order. Enjoy the new world, I guess."
 INF_CANON_SET = "Well, here you are. Enjoy your stay or something."
+INF_NOT_GM = "Wise choice. I'll let that jerk know you don't want any part of this nonsense."
+INF_DENIED_GM = "They made the smart choice and chose not to be GM. Call me again when you have someone for the job."
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
-
-
-# Back to Slacking Off #
-
-UH = "...I see my name? You called but uh. I don't know what you want me to do. "
-A_SO = "\n\n...back to watching anime."
-B_SO = "Now, time to recalibrate the canons."
-C_SO = "Now, if you'll excuse me, I'm going to toy with your character's stats. Promise I won't change them much. ;>"
-D_SO = "Now buzz off. I've got 'important' things to get to. ...I'm just messing with you, I've got nothing but time."
-E_SO = "But, uh, come back when you have something interesting for me to do, 'kay?"
-F_SO = "Well, another day, another five-billion commands to handle."
-G_SO = "\n\n...man, I live the good life. Bossed around, yet underworked and overpaid. Just how I like it."
-ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO]
 
 
 def rand_slack():
@@ -68,10 +57,11 @@ REQ_ROLL_PURPOSE = "What's this skill roll for?"
 REQ_MOD_AMOUNT = "By how many dice should this affect the roll? (i.e. -3, 4, 1, 2, etc...)"
 REQ_CANON = "Alright... so what canon are we working with today?"
 REQ_NEW_CANON = "So, what'cha wanna call this new story-world?"
-REQ_USER = "Now, which users are taking part in this 'glorious brawl?' You know the drill, " \
-           "list them all with at tags (@) and separate them with commas. Ah, do note that the GM is automatically " \
-           "included. No need to worry there. \n\n " \
-           "Ex: @DJ Dante , @ReedRGale"
+REQ_USER_COMBAT = "Now, which users are taking part in this 'glorious brawl?' You know the drill, " \
+                  "list them all with at tags (@) and separate them with commas. Ah, do note that the GM " \
+                  "is automatically included. No need to worry there. \n\n " \
+                  "Ex: @DJ Dante , @ReedRGale"
+REQ_USER_GM = "Okay, so who's gonna be running this show? If it's you, tag yourself. Otherwise, tag someone else."
 REQ_REL_CANON = "Alright, so what canon is your poison today?"
 
 
@@ -82,6 +72,10 @@ ASK_IF_MODS = "Are there modifications to this roll? " \
              "(i.e. Its dark; You made a torch to light the way; etc...)"
 ASK_IF_MORE_MODS = "Any more modifications to make?"
 ASK_IF_FIGHT = "So, someone challenged you to combat. You gonna make that fight happen in canon?"
+ASK_IF_GM = "Are you really sure you want to do this? Managing an RP is hard and you might have just been " \
+            "nominated for something you don't want to do. If so, just tell me 'no.' If not... well, your funeral. " \
+            "You know what they say about funerals though. Can't spell it without 'fun.' \n\n" \
+            "Anyway. What'll it be? Will you be this canon's god (world/RP)?"
 
 
 # Error Messages #
@@ -93,6 +87,8 @@ ERR_NOT_ENOUGH_ARGS = "Hey. Buddy. You need at least this many arguments to use 
 ERR_PLAYER_NONEXIST = "Yo. So... uh... I don't know how to put this nicely. But... that player doesn't... exist? Yeah."
 ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one you just wrote exists less than the other " \
                      "worlds that don't exist. That is, I don't have it in my records."
+ERR_ONLY_ONE_GM = "Alright, let's start with just one GM. Simplifies things for now. Later you can add multiple GMs." \
+                  "But for now... let's keep it simple."
 ERR_INV_ARG = "Sorry, don't know that keyword "
 ERR_REPEAT_ARG = "You've already used the keyword "
 ERR_INV_FORM = "Invalid. Once more, with feeling this time."
@@ -105,9 +101,25 @@ ERR_CANON_EXISTS = "This world is kind of already a thing. Don't like, get all u
 
 # Other #
 
+
 CHARACTERS_FILENAME = "characters.txt"
 RULES_FILENAME = "rules.txt"
 LOGS_FILENAME = "logs.txt"
 SUCCESS = "S - "
 FAILURE = "F - "
 AGAIN = "A - "
+
+
+# Snark #
+
+
+YOUR_FUNERAL = "Your funeral."
+UH = "...I see my name? You called but uh. I don't know what you want me to do. "
+A_SO = "\n\n...back to watching anime."
+B_SO = "Now, time to recalibrate the canons."
+C_SO = "Now, if you'll excuse me, I'm going to toy with your character's stats. Promise I won't change them much. ;>"
+D_SO = "Now buzz off. I've got 'important' things to get to. ...I'm just messing with you, I've got nothing but time."
+E_SO = "But, uh, come back when you have something interesting for me to do, 'kay?"
+F_SO = "Well, another day, another five-billion commands to handle."
+G_SO = "\n\n...man, I live the good life. Bossed around, yet underworked and overpaid. Just how I like it."
+ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO]

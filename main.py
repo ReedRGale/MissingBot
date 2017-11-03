@@ -6,7 +6,8 @@
 
 # TODO: Figure out how to use inline to make more usable interfaces.
 # TODO: Record user aliases { member.name, member.nick, member.mention }
-# TODO: Log every command in a way that is reasonable
+# TODO: Log every command in a way that is reasonable.
+# TODO: Properly document all parameters.
 
 
 # Import #
@@ -14,6 +15,7 @@
 
 import re
 
+from discord import http, enums
 from model import st, reg, val
 from controller import util
 
@@ -40,7 +42,6 @@ async def on_message(m):
     sl = "skillroll"
     rt = "registercombat"
     nn = "newcanon"
-    rn = "relevantcanon"
     hp = "help"
     db = "debug"
     commands = [fc, nr, lr, sl, rt, hp, db]
@@ -114,21 +115,8 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + nn):
         # Format: <Type Command>
-        # TODO: Ask for GM
-        # TODO: Send private message asking permission if the GM isn't the user calling the command.
 
-        status = await util.make_canon(m)
-        if status == val.escape_value:
-            return s(m, st.ESCAPE)
-
-        return await s(m, status + " " + st.rand_slack())
-
-    # # # # # # relevantcanon command # # # # # #
-
-    if m.content.startswith(val.command_prefix + " " + rn):
-        # Format: <Type Command>
-
-        status = await util.set_relevant_canon(m)
+        status = await util.make_canon(m, m.author)
         if status == val.escape_value:
             return s(m, st.ESCAPE)
 
@@ -175,8 +163,9 @@ async def on_message(m):
         # Await will wait on that thread until the end of time; no branching messages
         # The bot can only proceed linearly for each callback performed.
         # Multithreading can circumvent the linear nature of the bot's callbacks.
+        # With some serious finagling, you can link and create a channel and a category.
 
-        return await s(m, st.NAUGHT_INFORM + " " + st.rand_slack())
+        return await s(m, st.INF_NAUGHT + " " + st.rand_slack())
 
     # # # # # # ...character # # # # # #
 

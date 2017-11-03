@@ -12,35 +12,11 @@ import discord
 
 from multiprocessing.pool import ThreadPool
 from model import st, alias, reg, val
+from model.enums import UserType
 from controller import calc
 
 
 # Command Encapsulations #
-
-
-async def make_canon(m):
-    """Makes a canon folder and files."""
-    # Ask for RP name
-    canon = await request_of_user(m, st.REQ_NEW_CANON, format_none, expected_vars=1)
-    if canon[0] == val.escape_value:
-        return val.escape_value
-
-    # TODO: Make a player-prefs folder per canon
-    # TODO: Make relevant channels
-    # TODO: Store channel preferences
-    # TODO: Figure out how to group RP channels
-    # Make folder and initial docs
-    canon_dir = "model\\canons\\" + canon[0]
-    if not os.path.exists(canon_dir):
-        os.makedirs(canon_dir)
-        open(canon_dir + '\\' + st.CHARACTERS_FILENAME, 'a').close()
-        open(canon_dir + '\\' + st.LOGS_FILENAME, 'a').close()
-        open(canon_dir + '\\' + st.RULES_FILENAME, 'a').close()
-        status = st.INF_CANON_MADE
-    else:
-        status = st.ERR_CANON_EXISTS
-
-    return status
 
 
 async def add_character(m):
@@ -178,12 +154,9 @@ async def reg_combat(m):
     # TODO: Make this check by character, not player.
     # TODO: Add the GM if not already in the list.
     # Check player exists.
-    while not players_exist(users):
-        users = await request_of_user(m, st.REQ_USER, format_none, expected_vars=2, log_op=">=")
-        if users[0] == val.escape_value:
-            return val.escape_value
-        elif not players_exist(users):
-            await s(m, st.ERR_INV_FORM)
+    users = ask_for_user(m, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
+    if users[0] == val.escape_value:
+        return val.escape_value
 
     # Collect all users.
     members = get_member_dict()
@@ -192,7 +165,7 @@ async def reg_combat(m):
     async_results = {}
 
     for u in users:
-        priv = await val.client.send_message(members[u], st.ASK_IF_FIGHT)
+        priv = await t(members[u], st.ASK_IF_FIGHT)
         pool = ThreadPool()
         async_results[u] = pool.apply_async(wait_for_combat_affirmation, (members[u], priv.channel))
 
@@ -207,6 +180,7 @@ async def reg_combat(m):
                 queued.append(i)
             elif async_results[users[i]].get() in alias.DENY:
                 borked = True
+            # TODO: If in neither, send user an error message.
         for v in queued:
             accounted_for.append(users[v])
             del users[v]
@@ -221,25 +195,116 @@ async def reg_combat(m):
 
     # TODO: Begin combat interface in each channel.
 
-
-async def set_relevant_canon(m):
-    """Sets the relevant canon for the character."""
-    # TODO: Deprecate this; Hes had a better idea:
-    # Make the relevant canon linked to the channel itself.
-
+async def make_canon(m, user):
+    """Makes a canon folder and files."""
     # Ask for RP name
-    canon = await request_of_user(m, st.REQ_REL_CANON, format_none, expected_vars=1)
+    canon = await request_of_user(m, st.REQ_NEW_CANON, format_none, expected_vars=1)
     if canon[0] == val.escape_value:
         return val.escape_value
 
-    # TODO: Check to make sure that this user has characters in that canon
-    # TODO: Make certain channels visible and other channels invisible
+    # Ask for GM.
+    gm = await ask_for_user(m, st.REQ_USER_GM, 1, error=(st.ERR_ONLY_ONE_GM + ' ' + st.ERR_REPEAT), log_op="<=")
+    if gm[0] == val.escape_value:
+        return val.escape_value
+    have_gm = gm[0] == user.mention
+    borked = False
+
+    # If the GM isn't the maker of the canon, ask them if they want to take on this hell.
+    while not have_gm and not borked:
+        members = get_member_dict()
+        priv = await t(members[gm[0]], st.ASK_IF_GM)
+        result = await val.client.wait_for_message(channel=priv.channel)
+        if result.content in alias.AFFIRM:
+            await t(members[gm[0]], st.YOUR_FUNERAL)
+            have_gm = True
+        elif result.content in alias.DENY:
+            await t(members[gm[0]], st.INF_NOT_GM)
+            borked = True
+        else:
+            await t(members[gm[0]], st.ERR_INV_FORM)
+
+    # If GM denied the lofty position, let the caller know.
+    if borked:
+        return st.INF_DENIED_GM
+
+    # Make roles to discern who can do what.
+    roles = []
+    for n in UserType:
+        roles.append(await val.client.create_role(m.server, name=canon[0].title() + " " + str(n).upper()))
+
+    # Make folder and initial docs
     canon_dir = "model\\canons\\" + canon[0]
-    if os.path.exists(canon_dir):
-        val.rel_canon = canon_dir
-        status = st.INF_CANON_SET
+    if not os.path.exists(canon_dir):
+        os.makedirs(canon_dir)
+        open(canon_dir + '\\' + st.CHARACTERS_FILENAME, 'a').close()
+        open(canon_dir + '\\' + st.LOGS_FILENAME, 'a').close()
+        open(canon_dir + '\\' + st.RULES_FILENAME, 'a').close()
+        pref_dir = canon_dir + '\\' + "canon_prefs"
+        os.makedirs(pref_dir)
+
+        # For each member in the channel, make a file and add them to the proper role.
+        members = val.client.get_all_members()
+        for mem in members:
+            player_pref = pref_dir + "\\" + mem.id
+            with open(player_pref, "a") as fout:
+                if gm[0] == mem.mention:
+                    pref = {'user_type': UserType.gm.value, "recent_character": None}
+                    await val.client.add_roles(mem, roles[2])
+                else:
+                    pref = {'user_type': UserType.observer.value, "recent_character": None}
+                    await val.client.add_roles(mem, roles[0])
+                json.dump(pref, fout, indent=1)
+        status = st.INF_CANON_MADE
     else:
-        status = st.ERR_CANON_NONEXIST
+        status = st.ERR_CANON_EXISTS
+
+    # If this doesn't already exists make channels.
+    if status != st.ERR_CANON_EXISTS:
+        # Prepare permission levels.
+        n = discord.PermissionOverwrite(read_messages=False, send_messages=False)
+        r = discord.PermissionOverwrite(read_messages=True, send_messages=False)
+        rw = discord.PermissionOverwrite(read_messages=True, send_messages=False)
+
+        # Make category for the canon to reside in.
+        category = await val.client.create_channel(m.server, canon[0], type=4)
+
+        # Make channels for specific purposes per role.
+        c = ["_IC", "_OOC", "_command_room", "_meta", "_gm_notes"]
+
+        # IC Channel is locked on creation.
+        room = await val.client.create_channel(m.server, canon[0] + c[0],
+                                               (roles[0], r),
+                                               (roles[1], r),
+                                               (roles[2], r))
+        await val.client.edit_channel(room, parent_id=category.id)
+
+        # OOC Channel is open to all on creation.
+        room = await val.client.create_channel(m.server, canon[0] + c[1],
+                                               (roles[0], rw),
+                                               (roles[1], rw),
+                                               (roles[2], rw))
+        await val.client.edit_channel(room, parent_id=category.id)
+
+        # Command Room is open only to players and the gm.
+        room = await val.client.create_channel(m.server, canon[0] + c[2],
+                                               (roles[0], n),
+                                               (roles[1], rw),
+                                               (roles[2], rw))
+        await val.client.edit_channel(room, parent_id=category.id)
+
+        # Meta is for viewing the meta-rules of the canon only.
+        room = await val.client.create_channel(m.server, canon[0] + c[3],
+                                               (roles[0], r),
+                                               (roles[1], r),
+                                               (roles[2], r))
+        await val.client.edit_channel(room, parent_id=category.id)
+
+        # GM Notes is for the gm's eyes only.
+        room = await val.client.create_channel(m.server, canon[0] + c[4],
+                                               (roles[0], n),
+                                               (roles[1], n),
+                                               (roles[2], rw))
+        await val.client.edit_channel(room, parent_id=category.id)
 
     return status
 
@@ -388,8 +453,6 @@ def make_general_player_prefs():
     prefs_dir = r"model\general\playerprefs"
     if not os.path.exists(prefs_dir):
         os.makedirs(prefs_dir)
-
-    return status
 
 
 def get_characters():
@@ -633,15 +696,28 @@ async def wait_for_combat_affirmation(author, channel):
     return affirmed
 
 
-async def request_of_user(message, request_str, formatter, expected_vars, log_op="<="):
+async def request_of_user(m, request_str, formatter, expected_vars, log_op="<="):
     """Ask a request for the user and return that request as a list of inputs or return an escape character."""
-    await s(message, request_str)
-    rsp = await val.client.wait_for_message(author=message.author, channel=message.channel)
+    await s(m, request_str)
+    rsp = await val.client.wait_for_message(author=m.author, channel=m.channel)
     values = rsp.content.split(',')
-    values = await formatter(message, rsp.content, values, expected_vars, log_op)
+    values = await formatter(m, rsp.content, values, expected_vars, log_op)
     if values[0] == val.escape_value:
         return val.escape_value
     return values
+
+
+async def ask_for_user(m, request_str, expected_vars, log_op=">=", error=st.ERR_INV_FORM):
+    """Speeds up asking for a player."""
+    users = [""] # Dummy data to prime the pump.
+    while not players_exist(users):
+        users = await request_of_user(m, request_str, format_none, expected_vars=expected_vars, log_op=log_op)
+        if users[0] == val.escape_value:
+            return val.escape_value
+        elif not players_exist(users):
+            await s(m, error)
+
+    return users
 
 
 # Syntactical Candy #
@@ -650,3 +726,8 @@ async def request_of_user(message, request_str, formatter, expected_vars, log_op
 def s(message, arg):
     """Syntactical candy:  sends a message."""
     return val.client.send_message(message.channel, arg)
+
+
+def t(target, arg):
+    """Syntactical candy:  sends a message to a location (typically a user)."""
+    return val.client.send_message(target, arg)
