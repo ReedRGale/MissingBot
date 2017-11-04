@@ -1,6 +1,5 @@
 # ----------- Script by ReedRGale ----------- #
 # Utility functions that lubricate the process of... a lot of things. #
-# TODO: Separate this out further if you get the chance. Might be hell though.
 
 
 # Import #
@@ -21,10 +20,6 @@ from controller import calc
 
 async def add_character(m):
     """A function to store a JSON entry of a character"""
-    # TODO: Change to ask for player if GM
-    # TODO: Change to add player as character's maker if not GM
-    # TODO: Set limit on characters a player can make
-
     # Ask for stat values.
     for field in val.focused_character:
 
@@ -86,7 +81,6 @@ async def perform_skill_roll(m):
         return val.escape_value
 
     # Find the related character.
-    # TODO: Skip this if relevant character is set for player.
     characters_json = get_characters()
     all_names = []
     for name in characters_json:
@@ -139,7 +133,7 @@ async def perform_skill_roll(m):
 
 
 async def reg_combat(m):
-    """Begins a combat by opening the relevant channels"""  # TODO: Test this.
+    """Begins a combat by opening the relevant channels"""
     canon = '\n'
     users = []
 
@@ -151,8 +145,6 @@ async def reg_combat(m):
         elif not canon_exists(canon):
             await s(m, st.ERR_INV_FORM)
 
-    # TODO: Make this check by character, not player.
-    # TODO: Add the GM if not already in the list.
     # Check player exists.
     users = ask_for_user(m, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
     if users[0] == val.escape_value:
@@ -170,7 +162,7 @@ async def reg_combat(m):
         async_results[u] = pool.apply_async(wait_for_combat_affirmation, (members[u], priv.channel))
 
     # Process results...
-    accounted_for = []  # TODO: Add the player who called the command.
+    accounted_for = []
     queued = []
     borked = False
 
@@ -180,7 +172,6 @@ async def reg_combat(m):
                 queued.append(i)
             elif async_results[users[i]].get() in alias.DENY:
                 borked = True
-            # TODO: If in neither, send user an error message.
         for v in queued:
             accounted_for.append(users[v])
             del users[v]
@@ -192,8 +183,6 @@ async def reg_combat(m):
         await val.client.create_channel(m.server, "Test_Server",
                                         (m.server.default_role, everyone), (members[af], theirs))
         await val.client.send_message(members[af], st.INF_CHANNELS_MADE)
-
-    # TODO: Begin combat interface in each channel.
 
 async def make_canon(m, user):
     """Makes a canon folder and files."""
@@ -448,7 +437,6 @@ async def format_strip(m, command_info, array, expected_vars, log_op='<='):
 
 def make_general_player_prefs():
     """Initializes the player prefs if they don't exist."""
-    # TODO: Make generalized folder for general player-prefs
     # Make folder and initial docs
     prefs_dir = r"model\general\playerprefs"
     if not os.path.exists(prefs_dir):
@@ -682,7 +670,6 @@ async def wait_for_combat_affirmation(author, channel):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
     affirmed = None
 
-    # TODO: Change request_of_user to hide more in this function.
     # It'll need to ask for author and channel.
 
     # Go until confirmation acquired.

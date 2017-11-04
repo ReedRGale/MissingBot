@@ -4,12 +4,6 @@
 # Designed to handle rolls for the Missing RP #
 
 
-# TODO: Figure out how to use inline to make more usable interfaces.
-# TODO: Record user aliases { member.name, member.nick, member.mention }
-# TODO: Log every command in a way that is reasonable.
-# TODO: Properly document all parameters.
-
-
 # Import #
 
 
@@ -29,13 +23,11 @@ async def on_ready():
     print(val.client.user.name)
     print(val.client.user.id)
     print('------')
-    # TODO: Load in player prefs each time the bot starts.
 
 
 @val.client.event
 async def on_message(m):
     # List of commands.
-    # TODO: !update to update an entry.
     fc = "forecast"
     nr = "newcharacter"
     lr = "listcharacters"
@@ -125,10 +117,6 @@ async def on_message(m):
     # # # # # # help command # # # # # #
 
     if m.content.startswith(val.command_prefix + " " + hp):
-
-        # TODO: Make strings into constants and make the help messages into a map.
-        # TODO: Make all commands 'allcaps' to enforce the idea.
-        # TODO: Make help send the commands to the user in a private message.
 
         help_message = "Commands are currently as follows: \n\n"
 

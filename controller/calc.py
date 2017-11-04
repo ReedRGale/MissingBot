@@ -17,8 +17,6 @@ from model import st, val
 def calc_success(dice_pool, success_forecast):
     """Returns the likelihood of success for a given pool of dice and expected number of successes"""
 
-    # TODO: Account for '10 Again' rule
-
     return (math.pow(val.SUCCESS_VALUES, success_forecast)
             * math.pow(val.FAILURE_VALUES, (dice_pool - success_forecast))
             * combination(dice_pool, success_forecast)
@@ -46,7 +44,6 @@ def factorial(num):
 
 def branching_module(dice_pool, successes, forecast, ten_agains=0, succ_set=[]):
     """Helper Function for me to simulate the branching properties of ten again"""
-    # TODO: Uh. Ask someone smarter than you for help.
     # String to represent the simulation...
     branches = ''
 

@@ -8,10 +8,6 @@
 import random
 
 
-# TODO:  Make a random room name generator
-# TODO:  Make a room-word submission command
-
-
 # Informative Messages #
 
 
