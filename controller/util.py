@@ -184,6 +184,7 @@ async def reg_combat(m):
                                         (m.server.default_role, everyone), (members[af], theirs))
         await val.client.send_message(members[af], st.INF_CHANNELS_MADE)
 
+
 async def make_canon(m, user):
     """Makes a canon folder and files."""
     # Ask for RP name
@@ -258,7 +259,7 @@ async def make_canon(m, user):
         category = await val.client.create_channel(m.server, canon[0], type=4)
 
         # Make channels for specific purposes per role.
-        c = ["_IC", "_OOC", "_command_room", "_meta", "_gm_notes"]
+        c = ["_IC", "_OOC", "_command_room", "_rules", "_meta", "_gm_notes"]
 
         # IC Channel is locked on creation.
         room = await val.client.create_channel(m.server, canon[0] + c[0],
@@ -281,15 +282,22 @@ async def make_canon(m, user):
                                                (roles[2], rw))
         await val.client.edit_channel(room, parent_id=category.id)
 
-        # Meta is for viewing the meta-rules of the canon only.
+        # Rules is for posting that which people should follow that the bot doesn't enforce.
         room = await val.client.create_channel(m.server, canon[0] + c[3],
+                                               (roles[0], r),
+                                               (roles[1], r),
+                                               (roles[2], rw))
+        await val.client.edit_channel(room, parent_id=category.id)
+
+        # Meta is for viewing the meta-rules of the canon only.
+        room = await val.client.create_channel(m.server, canon[0] + c[4],
                                                (roles[0], r),
                                                (roles[1], r),
                                                (roles[2], r))
         await val.client.edit_channel(room, parent_id=category.id)
 
         # GM Notes is for the gm's eyes only.
-        room = await val.client.create_channel(m.server, canon[0] + c[4],
+        room = await val.client.create_channel(m.server, canon[0] + c[5],
                                                (roles[0], n),
                                                (roles[1], n),
                                                (roles[2], rw))
