@@ -32,14 +32,49 @@ def rand_slack():
 
 # Help Messages #
 
+NN_BRIEF = "'NewCanon' is a command to kick off a new RP."
+NN_HELP = "To Call: '~dd newcanon'\n\n" \
+          "Call anywhere within the server to have me walk you through the process of starting a new RP. Ultimately " \
+          "this will create a new set of channels under a specific category named for said new RP. Further, it " \
+          "automatically assigns the GM the role of GM and all other players to Observers roles. Members added to " \
+          "the RP will become Players and through me can be granted privileges to call certain commands--to make " \
+          "characters and start combat for instance. Otherwise, this sets the stage for walking the GM through the " \
+          "metarules process wherein they choose the features I provide that they wish to use for their RP."
 
-FC_HELP = "'Forecast' is a command that should give you an idea of how likely " \
-          "getting any particular amount of successes will be."
-NR_HELP = "'NewCharacter' is a command that allows you to add another character to the canon."
-LR_HELP = "'ListCharacters' is a command that shows you all recorded characters in the canon."
-SL_HELP = "'Skillroll' is a command that walks you through rolling dice for a skill roll."
-DB_HELP = "'Debug' is a command that helps me test things. Don't worry about it."
-RT_HELP = "'RegisterCombat' is a command that begins a combat instance for you and other members participating."
+FT_BRIEF = "'Forecast' is a command that should give you an idea of how likely " \
+           "getting any particular amount of successes will be."
+FT_HELP = "To Call: '~dd forecast [forecast] [# of dice in pool]' \n\n" \
+          "Forecast gives an accurate measurement, using NWoD skill-check rules, of the likelihood that a particular" \
+          "amount of successes will occur--called the forecast--in a particular dice pool--that is, the total number " \
+          "of dice that are currently being rolled."
+
+NR_BRIEF = "'NewCharacter' is a command that allows you to add another character to the canon."
+NR_HELP = "To Call: '~dd newcharacter' within an RP command_room\n\n" \
+          "When called, 'NewCharacter' walks the user through the process of making a new character following the" \
+          "meta decided upon for the RP. Each step records a single important field for the character. Unless given" \
+          "permission, this can only be called by the GM. This command is not callable until the meta is decided upon."
+
+LR_BRIEF = "'ListCharacters' is a command that shows you all recorded characters in the canon."
+LR_HELP = "To Call: '~dd listcharacters' within an RP command_room\n\n" \
+          "When called, prints a list of each character currently registered in the RP."
+
+SL_BRIEF = "'Skillroll' is a command that walks you through rolling dice for a skill roll."
+SL_HELP = "To Call: '~dd skillroll' within an RP command_room\n\n" \
+          "Skillroll asks all the proper questions to make a NWoD Skill Roll, then properly formats the string for " \
+          "posting in a forum or in the middle of a channel message."
+
+NT_BRIEF = "'NewCombat' is a command that begins a combat instance for you and other members participating."
+NT_HELP = "To Call: '~dd skillroll' within an RP command_room\n\n" \
+          "When called, NewCombat asks for each member participating in a combat instance. After confirming that " \
+          "each member properly wants to participate/can participate in said combat, it sets up private channels " \
+          "for each participant and opens the combat interface."
+
+HP_BRIEF = "'Help' is a standard help command. By calling '~dd help [item]' " \
+           "on any command or all-caps word, you can get a small piece on that item."
+HP_HELP = "Good work. That is exactly how you check the detailed help docs of a command."
+
+DB_BRIEF = "'Debug' is a command that helps me test things. Don't worry about it."
+DB_HELP = "If I set this up properly, how did you ever get here...? Are you on my account? Spoopy."
 
 
 # Request Messages #

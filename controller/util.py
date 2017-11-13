@@ -183,7 +183,7 @@ async def perform_skill_roll(m):
     return final_string
 
 
-async def reg_combat(m):
+async def new_combat(m):
     """Begins a combat by opening the relevant channels"""
     # Prepare canon file path.
     canon = "model\\" + st.CANONS_FN + "\\" + m.channel.category_id
@@ -356,12 +356,12 @@ async def f_alpha(m, command_info, array, expected_vars, log_op="<="):
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
-            formatted_rsp = await val.client.wait_for("message", check=check)
+            formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
             await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
-            formatted_rsp = await val.client.wait_for("message", check=check)
+            formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
 
         # Filter out non-alphabetic data
@@ -395,12 +395,12 @@ async def f_numer(m, command_info, array, expected_vars, log_op='<='):
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
-            formatted_rsp = await val.client.wait_for("message", check=check)
+            formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
             await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
-            formatted_rsp = await val.client.wait_for("message", check=check)
+            formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
 
         # Filter out non-alphabetic data
@@ -439,7 +439,7 @@ async def f_none(m, command_info, array, expected_vars=1, log_op="<="):
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
             await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
-            formatted_rsp = await val.client.wait_for("message", check=check)
+            formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         else:
             single_statement = array
@@ -471,12 +471,12 @@ async def f_strip(m, command_info, array, expected_vars, log_op='<='):
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
-            formatted_rsp = await val.client.wait_for("message", check=check)
+            formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
             await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
-            formatted_rsp = await val.client.wait_for("message", check=check)
+            formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
 
         # Filter out non-alphabetic data
@@ -525,7 +525,8 @@ def get_character_json(character, channel):
                      + str(channel.category_id) + "\\" \
                      + st.CHARACTERS_FN + "\\" \
                      + character
-    with open(character_file, "r+") as fin:
+    open(character_file, "a").close()
+    with open(character_file, "r") as fin:
         if os.stat(character_file).st_size > 0:
             a = json.load(fin)
         else:
@@ -549,7 +550,7 @@ def return_member(m, mention, user_id=""):
     # # If ID provided, return what the bot would return. # #
 
     if user_id:
-        return val.client.get_user(user_id)
+        return val.bot.get_user(user_id)
 
     # # If no ID provided, return based on mention. # #
 
@@ -727,7 +728,7 @@ async def wait_for_combat_affirmation(author, channel):
 
         def check(resp): return resp.author == a and resp.channel == c
 
-        affirmed = await val.client.wait_for("message", check=check)
+        affirmed = await val.bot.wait_for("message", check=check)
         affirmed = affirmed.content
         if affirmed.lower() not in alias.AFFIRM and affirmed.lower() not in alias.DENY:
             affirmed = None
@@ -748,7 +749,7 @@ async def req(m, req_str, formatter, expected_vars, log_op="<="):
     def check(resp): return resp.author == a and resp.channel == c
 
     # Wait for response.
-    rsp = await val.client.wait_for("message", check=check)
+    rsp = await val.bot.wait_for("message", check=check)
     values = rsp.content.split(',')
     values = await formatter(m, rsp.content, values, expected_vars, log_op)
     if values[0] == val.escape_value:

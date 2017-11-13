@@ -5,7 +5,7 @@
 # Imports #
 
 
-import discord
+from discord.ext import commands
 
 
 # Values #
@@ -16,8 +16,7 @@ FAILURE_VALUES = 6
 DICE_SIZE = 10
 
 rooms = 0
-command_prefix = "~dd"
 escape_value = "~"
 
-client = discord.Client()
+bot = commands.Bot(command_prefix="~dd ")
 app_token = "MzUzMTEzODg4Nzg0NjQ2MTQ0.DIunqw.tTJF2f3cDXSYXOcMdXMCETDqrLA"

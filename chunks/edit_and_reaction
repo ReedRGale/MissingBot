@@ -1,6 +1,0 @@
-msg = await s(message, "I'll copy ur emoji fam")
-test = await val.client.wait_for_reaction(message=msg)
-test_str = '{0.reaction.emoji}'.format(test)
-await val.client.edit_message(message=msg, new_content=test_str)
-
-return await s(message, "That should work...")

@@ -13,143 +13,101 @@ from model import st, reg, val
 from controller import util
 
 
+# Init #
+
+
+# I intend to overwrite this.
+val.bot.remove_command("help")
+
+
 # Events #
 
 
-@val.client.event
+@val.bot.event
 async def on_ready():
     print('Logged in as')
-    print(val.client.user.name)
-    print(val.client.user.id)
+    print(val.bot.user.name)
+    print(val.bot.user.id)
     print('------')
 
+    # # # # # # # ...character # # # # # #
+    #
+    # if m.content == val.command_prefix or m.content == val.command_prefix + " ":
+    #     # Format: <Fuck up command>
+    #     return await s(m, st.UH + " " + st.rand_slack())
 
-@val.client.event
-async def on_message(m):
-    # List of commands.
-    fc = "forecast"
-    nr = "newcharacter"
-    lr = "listcharacters"
-    sl = "skillroll"
-    rt = "registercombat"
-    nn = "newcanon"
-    hp = "help"
-    db = "debug"
-    commands = [fc, nr, lr, sl, rt, hp, db]
+@val.bot.command(name="newcanon", help=st.NN_HELP, brief=st.NN_BRIEF)
+async def new_canon(ctx):
+    """Makes a new canon, including folders and player prefs."""
+    status = await util.make_canon(ctx.message, ctx.message.author)
+    if status == val.escape_value:
+        return
+    return await ctx.send(status + " " + st.rand_slack())
 
-    # # # # # # forecast command # # # # # #
 
-    if m.content.startswith(val.command_prefix + " " + fc):
-        # Format: [dice_pool, forecast_successes]
+@val.bot.command(name="newcharacter", help=st.NR_HELP, brief=st.NR_BRIEF)
+async def new_character(ctx):
+    e_nr = await util.add_character(ctx.message, ctx.message.author, ctx.message.channel)
+    if e_nr == val.escape_value:
+        return
+    return await ctx.send(st.SAVED)
 
-        args = m.content.split(',')
 
-        # Check to make sure they didn't try to screw things up.
-        if len(args) > 3:
-            return await s(m, st.ERR_EXTRA_ARGS + '2')
+@val.bot.command(name="listcharacters", help=st.LR_HELP, brief=st.LR_BRIEF)
+async def list_characters(ctx):
+    return await ctx.send(util.get_characters(ctx.message))
 
-        # Filter out non-numeric data
-        for i in range(0, 2):
-            args[i] = re.sub(reg.non_numeric, '', args[i])
 
-        return await s(m, st.INF_BROKEN + " " + st.rand_slack())
+@val.bot.command(name="skillroll", help=st.SL_HELP, brief=st.SL_BRIEF)
+async def skill_roll(ctx):
+    # Begin the skill roll.
+    final_string = await util.perform_skill_roll(ctx.message)
+    if final_string == val.escape_value:
+        return
+    return await ctx.send(final_string)
 
-    # # # # # # newcharacter command # # # # # #
 
-    if m.content.startswith(val.command_prefix + " " + nr):
-        # Ask the questions and add the character.
-        e_nr = await util.add_character(m, m.author, m.channel)
-        if e_nr == val.escape_value:
-            return s(m, st.ESCAPE)
+@val.bot.command(name="newcombat", help=st.NT_HELP, brief=st.NT_BRIEF)
+async def new_combat(ctx):
+    e_rt = await util.new_combat(ctx.message)
+    if e_rt == val.escape_value:
+        return ctx.send(st.ESCAPE)
 
-        return await s(m, st.SAVED)
+    return await ctx.send(st.INF_DONE + " " + st.rand_slack())
 
-    # # # # # # listcharacters command # # # # # #
 
-    if m.content.startswith(val.command_prefix + " " + lr):
+@val.bot.command(name="forecast", help=st.FT_HELP, brief=st.FT_BRIEF)
+async def forecast(ctx, forecast, pool):
+    """A command to accurately estimate a forecasted amount of success in a dice pool."""
+    return await ctx.send(st.INF_BROKEN + " " + st.rand_slack())
 
-        return await s(m, util.get_characters(m))
 
-    # # # # # # skillroll command # # # # # #
+@val.bot.command(name="help", help=st.HP_HELP, brief=st.HP_BRIEF)
+async def help_command(ctx, *args):
+    """Command to simplify referencing the help documents."""
+    if args and len(args) == 1:  # If they want help with a specific command...
+        await ctx.send(val.bot.get_command(args[0]).help)
+    elif args:
+        await ctx.send(st.ERR_EXTRA_ARGS)
+    else:  # Otherwise print out all command briefs.
+        await ctx.send("All Available Commands: \n\n")
+        available_commands = val.bot.all_commands
+        for name in available_commands:
+            await ctx.send(name + ":  " + available_commands[name].brief + "\n")
 
-    if m.content.startswith(val.command_prefix + " " + sl):
-        # Format: <Type Command>
 
-        # Begin the skill roll.
-        final_string = await util.perform_skill_roll(m)
-        if final_string == val.escape_value:
-            return s(m, st.ESCAPE)
+@val.bot.command(name="debug", help=st.DB_HELP, brief=st.DB_BRIEF)
+async def debug(ctx):
+    """Command to test things."""
+    # Learned:
+    # You can reference members from mentions in messages by using member.mention.
+    # Users are a valid destination for send_message()
+    # Await will wait on that thread until the end of time; no branching messages
+    # The bot can only proceed linearly for each callback performed.
+    # Multithreading can circumvent the linear nature of the bot's callbacks.
+    # With some serious finagling, you can link and create a channel and a category.
 
-        return await s(m, final_string)
-
-    # # # # # # registercombat command # # # # # #
-
-    if m.content.startswith(val.command_prefix + " " + rt):
-        # Format: <Type Command>
-
-        e_rt = await util.reg_combat(m)
-        if e_rt == val.escape_value:
-            return s(m, st.ESCAPE)
-
-        return await s(m, st.INF_DONE + " " + st.rand_slack())
-
-    # # # # # # newcanon command # # # # # #
-
-    if m.content.startswith(val.command_prefix + " " + nn):
-        # Format: <Type Command>
-
-        status = await util.make_canon(m, m.author)
-        if status == val.escape_value:
-            return s(m, st.ESCAPE)
-
-        return await s(m, status + " " + st.rand_slack())
-
-    # # # # # # help command # # # # # #
-
-    if m.content.startswith(val.command_prefix + " " + hp):
-
-        help_message = "Commands are currently as follows: \n\n"
-
-        if fc in m.content:
-            help_message = st.FC_HELP
-        elif nr in m.content:
-            help_message = st.NR_HELP
-        elif lr in m.content:
-            help_message = st.LR_HELP
-        elif sl in m.content:
-            help_message = st.SL_HELP
-        elif rt in m.content:
-            help_message = st.SL_HELP
-        elif db in m.content:
-            help_message = st.DB_HELP
-        else:
-            for command in commands:
-                help_message += command + '\n'
-            help_message += "For more information use !help followed by a command to get more information. " \
-                            "i.e. !help help."
-
-        return await s(m, help_message)
-
-    # # # # # # debug command # # # # # #
-
-    if m.content.startswith(val.command_prefix + " " + db):
-        # Format: <relative>
-
-        # Learned:
-        # You can reference members from mentions in messages by using member.mention.
-        # Users are a valid destination for send_message()
-        # Await will wait on that thread until the end of time; no branching messages
-        # The bot can only proceed linearly for each callback performed.
-        # Multithreading can circumvent the linear nature of the bot's callbacks.
-        # With some serious finagling, you can link and create a channel and a category.
-
-        return await s(m, st.INF_NAUGHT + " " + st.rand_slack())
-
-    # # # # # # ...character # # # # # #
-
-    if m.content == val.command_prefix or m.content == val.command_prefix + " ":
-        # Format: <Fuck up command>
-        return await s(m, st.UH + " " + st.rand_slack())
+    await ctx.send(st.INF_NAUGHT + " " + st.rand_slack())
 
 
 # Syntactical Candy #
@@ -164,4 +122,4 @@ def s(m, arg):
 
 
 # Run the script.
-val.client.run(val.app_token)
+val.bot.run(val.app_token)
