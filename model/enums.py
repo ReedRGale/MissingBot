@@ -3,12 +3,39 @@
 
 
 from enum import Enum
+from functools import total_ordering
 
 
+@total_ordering
 class UserType(Enum):
-    observer = 0
-    player = 1
-    gm = 2
+    OBSERVER = 0
+    PLAYER = 1
+    GM = 2
+
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value < other.value
+        return NotImplemented
+
+    def __gt__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value > other.value
+        return NotImplemented
+
+    def __le__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value <= other.value
+        return NotImplemented
+
+    def __ge__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value >= other.value
+        return NotImplemented
+
+    def __eq__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value == other.value
+        return NotImplemented
 
     def __str__(self):
         return self.name

@@ -1,4 +1,4 @@
-# Version 1.1.5
+# Version 1.2.0
 #
 #  ----------- Script by ReedRGale ----------- #
 # Designed to handle rolls for the Missing RP #
@@ -9,7 +9,6 @@
 
 import re
 
-from discord import http, enums
 from model import st, reg, val
 from controller import util
 
@@ -59,7 +58,7 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + nr):
         # Ask the questions and add the character.
-        e_nr = await util.add_character(m)
+        e_nr = await util.add_character(m, m.author, m.channel)
         if e_nr == val.escape_value:
             return s(m, st.ESCAPE)
 
@@ -69,16 +68,7 @@ async def on_message(m):
 
     if m.content.startswith(val.command_prefix + " " + lr):
 
-        # Load in file.
-        characters = util.get_characters()
-
-        # Concatenate all names.
-        all_names = "Character Names: \n"
-
-        for name in characters:
-            all_names += '► ' + name + '\n'
-
-        return await s(m, all_names)
+        return await s(m, util.get_characters(m))
 
     # # # # # # skillroll command # # # # # #
 
@@ -165,9 +155,9 @@ async def on_message(m):
 # Syntactical Candy #
 
 
-def s(message, arg):
+def s(m, arg):
     """Syntactical candy:  sends a message."""
-    return val.client.send_message(message.channel, arg)
+    return m.channel.send(content=arg)
 
 
 # Code #

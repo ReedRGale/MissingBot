@@ -57,6 +57,8 @@ REQ_USER_COMBAT = "Now, which users are taking part in this 'glorious brawl?' Yo
                   "list them all with at tags (@) and separate them with commas. Ah, do note that the GM " \
                   "is automatically included. No need to worry there. \n\n " \
                   "Ex: @DJ Dante , @ReedRGale"
+REQ_PLAYER = "So, which player is gonna to be using this character? Remember to use their taggable name. You know, " \
+             "the one with the '@' in it?"
 REQ_USER_GM = "Okay, so who's gonna be running this show? If it's you, tag yourself. Otherwise, tag someone else."
 REQ_REL_CANON = "Alright, so what canon is your poison today?"
 
@@ -76,15 +78,19 @@ ASK_IF_GM = "Are you really sure you want to do this? Managing an RP is hard and
 
 # Error Messages #
 
-ERR_REPEAT = "Let's try that again."
+ERR_REPEAT_1 = "Let's try that again."
+ERR_REPEAT_2 = "Try again. With feeling this time."
 
 ERR_EXTRA_ARGS = "Whoa there pardner. That's a lot of arguments. Try to keep it to around "
 ERR_NOT_ENOUGH_ARGS = "Hey. Buddy. You need at least this many arguments to use this command: "
+ERR_PLAYER_EXIST = "Yo. So... uh... don't try to like... take this character's identity. K? They already exist. " \
+                   "Let 'em be."
 ERR_PLAYER_NONEXIST = "Yo. So... uh... I don't know how to put this nicely. But... that player doesn't... exist? Yeah."
 ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one you just wrote exists less than the other " \
                      "worlds that don't exist. That is, I don't have it in my records."
 ERR_ONLY_ONE_GM = "Alright, let's start with just one GM. Simplifies things for now. Later you can add multiple GMs." \
                   "But for now... let's keep it simple."
+ERR_CHANNEL_NOT_IN_CANON = "This channel isn't in a canon. Try calling this command somewhere it would, y'know, _work_."
 ERR_INV_ARG = "Sorry, don't know that keyword "
 ERR_REPEAT_ARG = "You've already used the keyword "
 ERR_INV_FORM = "Invalid. Once more, with feeling this time."
@@ -93,14 +99,19 @@ ERR_STAT_GT_FIFT = "A stat can't be greater than 15. And that's already obnoxiou
 ERR_NOT_YES_OR_NO = "Sorry, that doesn't look affirmative or negatory, boss. If worst comes to worst, " \
                     "don't be creative. A simple 'yes' or 'no' would suffice. So once more. With feeling this time."
 ERR_CANON_EXISTS = "This world is kind of already a thing. Don't like, get all up in its biz' ya dig?"
+ERR_NOT_IN_RP = "Hey. This person is just an observer here. What're ya tryin to pull?"
+ERR_NOT_IN_GUILD = "Okay so maybe you really like that person. But they aren't here. I can't work with people that " \
+                   "aren't here."
 
 
 # Other #
 
 
-CHARACTERS_FILENAME = "characters.txt"
-RULES_FILENAME = "rules.txt"
-LOGS_FILENAME = "logs.txt"
+CHARACTERS_FN = "characters"
+RULES_FN = "rules"
+LOGS_FN = "logs"
+CANONS_FN = "canons"
+PLAYER_PREFS_FN = "player_prefs"
 SUCCESS = "S - "
 FAILURE = "F - "
 AGAIN = "A - "
