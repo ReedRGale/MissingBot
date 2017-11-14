@@ -19,4 +19,3 @@ rooms = 0
 escape_value = "~"
 
 bot = commands.Bot(command_prefix="~dd ")
-app_token = "MzUzMTEzODg4Nzg0NjQ2MTQ0.DIunqw.tTJF2f3cDXSYXOcMdXMCETDqrLA"

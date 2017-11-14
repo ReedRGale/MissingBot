@@ -779,6 +779,11 @@ def members_exist(m, m_list):
     return all_exist
 
 
+def get_app_token():
+    with open('token.txt', 'r') as token:
+        token = token.read()
+    return token
+
 # Syntactical Candy #
 
 

@@ -7,9 +7,7 @@
 # Import #
 
 
-import re
-
-from model import st, reg, val
+from model import st, val
 from controller import util
 
 
@@ -122,4 +120,4 @@ def s(m, arg):
 
 
 # Run the script.
-val.bot.run(val.app_token)
+val.bot.run(util.get_app_token())
