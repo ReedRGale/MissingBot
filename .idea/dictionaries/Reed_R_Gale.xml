@@ -7,12 +7,17 @@
       <w>formatters</w>
       <w>fout</w>
       <w>gamemaster</w>
+      <w>listcharacters</w>
       <w>mems</w>
+      <w>newcanon</w>
+      <w>newcharacter</w>
+      <w>newcombat</w>
       <w>numer</w>
       <w>playerprefs</w>
       <w>prefs</w>
       <w>priv</w>
       <w>reprime</w>
+      <w>skillroll</w>
       <w>unfound</w>
     </words>
   </dictionary>

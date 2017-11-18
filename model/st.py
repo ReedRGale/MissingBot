@@ -143,10 +143,12 @@ ERR_NOT_IN_GUILD = "Okay so maybe you really like that person. But they aren't h
 
 
 CHARACTERS_FN = "characters"
-RULES_FN = "rules"
+META_FN = "meta"
 LOGS_FN = "logs"
 CANONS_FN = "canons"
 PLAYER_PREFS_FN = "player_prefs"
+ROLES_FN = "roles.json"
+EXCEPTIONS_FN = "command_exceptions.json"
 SUCCESS = "S - "
 FAILURE = "F - "
 AGAIN = "A - "

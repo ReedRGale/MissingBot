@@ -6,8 +6,10 @@
 
 # Import #
 
-
+import os
+import json
 from model import st, val
+from model.enums import UserType
 from controller import util
 
 
@@ -19,6 +21,68 @@ val.bot.remove_command("help")
 
 
 # Events #
+
+@val.bot.event
+async def on_member_join(mem):
+    # When player joins, update the player_prefs and update them.
+    util.make_general_player_prefs(mem.guild)
+
+    guild_path = "model\\" + str(mem.guild.id) + "\\" + st.CANONS_FN
+
+    # For each canon, update the player_prefs and roles.
+    if os.path.exists(guild_path):
+
+        c_names = os.listdir(guild_path)
+        for c in c_names:
+            pref_path = guild_path + "\\" \
+                        + c + "\\" \
+                        + st.PLAYER_PREFS_FN + "\\" \
+                        + str(mem.id) + ".json"
+
+            open(pref_path, "a").close()
+            with open(pref_path, "w") as fout:
+                pref = {"user_type": UserType.OBSERVER.value, "relevant_character": None}
+                json.dump(pref, fout, indent=1)
+
+            with open(guild_path + "\\" + c + "\\" + st.ROLES_FN, "r") as fin:
+                role_id = json.load(fin)[str(UserType.OBSERVER)]
+                for r in mem.guild.roles:
+                    if role_id == r.id:
+                        role = r
+                await mem.add_roles(role)
+
+
+@val.bot.event
+async def on_command(ctx):
+    # On startup, check the general player_prefs and update them.
+    util.make_general_player_prefs(ctx.guild)
+
+    guild_path = "model\\" + str(ctx.guild.id) + "\\" + st.CANONS_FN
+
+    # Only do this if the path exists already.
+    if os.path.exists(guild_path):
+        c_names = os.listdir(guild_path)
+
+        # For each canon, make sure of the player_prefs and roles.
+        for mem in ctx.guild.members:
+            for c in c_names:
+                pref_path = guild_path + "\\" \
+                            + c + "\\" \
+                            + st.PLAYER_PREFS_FN + "\\" \
+                            + str(mem.id) + ".json"
+
+                if not os.path.exists(pref_path):
+                    open(pref_path, "a").close()
+                    with open(pref_path, "w") as fout:
+                        pref = {"user_type": UserType.OBSERVER.value, "relevant_character": None}
+                        json.dump(pref, fout, indent=1)
+
+                    with open(guild_path + "\\" + c + "\\" + st.ROLES_FN, "r") as fin:
+                        role_id = json.load(fin)[str(UserType.OBSERVER)]
+                        for r in mem.guild.roles:
+                            if role_id == r.id:
+                                role = r
+                        await mem.add_roles(role)
 
 
 @val.bot.event
@@ -34,9 +98,14 @@ async def on_ready():
     #     # Format: <Fuck up command>
     #     return await s(m, st.UH + " " + st.rand_slack())
 
+
+# Commands #
+
+
 @val.bot.command(name="newcanon", help=st.NN_HELP, brief=st.NN_BRIEF)
 async def new_canon(ctx):
     """Makes a new canon, including folders and player prefs."""
+    if_in_canon = True
     status = await util.make_canon(ctx.message, ctx.message.author)
     if status == val.escape_value:
         return
@@ -45,6 +114,7 @@ async def new_canon(ctx):
 
 @val.bot.command(name="newcharacter", help=st.NR_HELP, brief=st.NR_BRIEF)
 async def new_character(ctx):
+    if_in_canon = True
     e_nr = await util.add_character(ctx.message, ctx.message.author, ctx.message.channel)
     if e_nr == val.escape_value:
         return

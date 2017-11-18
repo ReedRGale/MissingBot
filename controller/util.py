@@ -22,7 +22,7 @@ async def add_character(m, author, channel):
     """A function to store a JSON entry of a character"""
 
     # Command is different for GMs
-    caller_is_gm = get_user_type(author, channel) == UserType.GM
+    caller_is_gm = get_user_type(m, author, channel) == UserType.GM
 
     if caller_is_gm:
         # Ask which player this is for.
@@ -39,7 +39,7 @@ async def add_character(m, author, channel):
             # Check if player exists/isn't an observer
             if player is None:
                 await s(m, st.ERR_NOT_IN_GUILD + " " + st.ERR_REPEAT_1)
-            if get_user_type(player, channel) == UserType.OBSERVER.value:
+            if get_user_type(m, player, channel) == UserType.OBSERVER.value:
                 await s(m, st.ERR_NOT_IN_RP + " " + st.ERR_REPEAT_2)
             else:
                 # Now we know to associate the character with this player.
@@ -97,20 +97,23 @@ async def add_character(m, author, channel):
 
     # Update character file.
     character_file = "model\\" \
+                     + str(m.guild.id) + "\\" \
                      + st.CANONS_FN + "\\" \
                      + str(channel.category_id) + "\\" \
                      + st.CHARACTERS_FN + "\\" \
                      + character["NAME"]
-    with open(character_file, "w") as fout:
+    with open(character_file + ".json", "w") as fout:
         json.dump(character, fout, indent=1)
 
     # Update player prefs.
-    prefs = get_prefs(author, channel)
+    prefs = get_prefs(m, author, channel)
     prefs["relevant_character"] = character["NAME"]
-    canon = "model\\" + st.CANONS_FN + "\\" \
+    canon = "model\\" \
+            + str(m.guild.id) + "\\" \
+            + st.CANONS_FN + "\\" \
             + str(channel.category_id) + "\\" \
             + st.PLAYER_PREFS_FN + "\\"
-    with open(canon + "\\" + str(author.id), "w") as fout:
+    with open(canon + "\\" + str(author.id) + ".json", "w") as fout:
         json.dump(prefs, fout, indent=1)
 
 
@@ -186,7 +189,10 @@ async def perform_skill_roll(m):
 async def new_combat(m):
     """Begins a combat by opening the relevant channels"""
     # Prepare canon file path.
-    canon = "model\\" + st.CANONS_FN + "\\" + m.channel.category_id
+    canon = "model\\" \
+            + str(m.guild.id) + "\\" \
+            + st.CANONS_FN + "\\" \
+            + str(m.channel.category_id)
 
     # Check player exists.
     members = req_user(m, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
@@ -261,25 +267,40 @@ async def make_canon(m, member):
     # Make roles to discern who can do what.
     roles = []
     for n in UserType:
-        roles.append(await m.guild.create_role(name=canon[0].title() + " " + str(n).upper()))
+        roles.append(await m.guild.create_role(name=canon[0].upper() + " " + str(n).upper()))
 
     # Make category for the canon to reside in.
     category = await m.guild.create_category(canon[0])
 
     # Make folder and initial docs
-    canon_dir = "model\\" + st.CANONS_FN + "\\" + str(category.id)
+    canon_dir = "model\\" + str(m.guild.id) + "\\" + st.CANONS_FN + "\\" + str(category.id)
     if not os.path.exists(canon_dir):
         # Prepare all directories.
         os.makedirs(canon_dir)
         os.makedirs(canon_dir + "\\" + st.CHARACTERS_FN)
         os.makedirs(canon_dir + "\\" + st.LOGS_FN)
-        os.makedirs(canon_dir + "\\" + st.RULES_FN)
+        os.makedirs(canon_dir + "\\" + st.META_FN)
         pref_dir = canon_dir + "\\" + st.PLAYER_PREFS_FN
         os.makedirs(pref_dir)
 
+        # Make a file to handle the command exceptions
+        except_dir = canon_dir + "\\" + st.META_FN + "\\" + st.EXCEPTIONS_FN
+        open(except_dir, "a").close()
+        with open(except_dir, "w") as fout:
+            json.dump({}, fout, indent=1)
+
+        # Record the role ids for later access.
+        role_dir, role_ids = canon_dir + "\\" + st.META_FN + "\\" + st.ROLES_FN, {}
+        open(role_dir, "a").close()
+        with open(role_dir, "w") as fout:
+            for r in roles:
+                role_type = r.name.split(" ")[1]
+                role_ids[role_type] = r.id
+            json.dump(role_ids, fout, indent=1)
+
         # For each member in the channel, make a file and add them to the proper role.
         for mem in m.guild.members:
-            player_pref = pref_dir + "\\" + str(mem.id)
+            player_pref = pref_dir + "\\" + str(mem.id) + ".json"
             with open(player_pref, "a") as fout:
                 if gm[0] == mem.mention:
                     pref = {"user_type": UserType.GM.value, "relevant_character": None}
@@ -489,18 +510,39 @@ async def f_strip(m, command_info, array, expected_vars, log_op='<='):
 # Utility #
 
 
-def make_general_player_prefs():
+def init_perms(ctx, in_canon, perms):
+    """Provides information about command relative to the member calling the command."""
+    if get_canon() and in_canon:
+        # TODO: Check if on exception list.
+        # TODO: Check role of player.
+        # TODO: Return role id or error message.
+        pass
+    elif in_canon:
+        return "DEBUG: Not in canon when it should be."
+    else:
+        return None
+
+
+def make_general_player_prefs(guild):
     """Initializes the player prefs if they don't exist."""
-    # Make folder and initial docs
-    prefs_dir = r"model\general\playerprefs"
-    if not os.path.exists(prefs_dir):
-        os.makedirs(prefs_dir)
+    # Make folder and initial docs if they don't exist.
+    pref_dir = "model\\" + str(guild.id) + "\\general\\" + st.PLAYER_PREFS_FN
+    if not os.path.exists(pref_dir):
+        os.makedirs(pref_dir)
+
+    # For each member in the channel, make a file.
+    for mem in guild.members:
+        player_pref = pref_dir + "\\" + str(mem.id) + ".json"
+        if not os.path.exists(player_pref):
+            with open(player_pref, "a") as fout:
+                pref = {"escape": '~'}
+                json.dump(pref, fout, indent=1)
 
 
 def get_canon(m):
     """Returns the category file path or None of doesn't exist."""
     if m.channel.category_id:
-        canon = "model\\" + st.CANONS_FN + "\\" + str(m.channel.category_id)
+        canon = "model\\" + str(m.guild.id) + "\\" + st.CANONS_FN + "\\" + str(m.channel.category_id)
         return canon if os.path.exists(canon) else None
 
 
@@ -783,6 +825,7 @@ def get_app_token():
     with open('token.txt', 'r') as token:
         token = token.read()
     return token
+
 
 # Syntactical Candy #
 

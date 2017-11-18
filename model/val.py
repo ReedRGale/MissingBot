@@ -18,4 +18,6 @@ DICE_SIZE = 10
 rooms = 0
 escape_value = "~"
 
-bot = commands.Bot(command_prefix="~dd ")
+bot = commands.Bot(command_prefix="~dd ", fetch_offline_members=True)
+
+
