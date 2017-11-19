@@ -106,7 +106,7 @@ async def on_ready():
 async def new_canon(ctx):
     """Makes a new canon, including folders and player prefs."""
     if_in_canon = True
-    status = await util.make_canon(ctx.message, ctx.message.author)
+    status = await util.make_canon(ctx.message)
     if status == val.escape_value:
         return
     return await ctx.send(status + " " + st.rand_slack())
@@ -181,9 +181,9 @@ async def debug(ctx):
 # Syntactical Candy #
 
 
-def s(m, arg):
+def s(ctx, arg):
     """Syntactical candy:  sends a message."""
-    return m.channel.send(content=arg)
+    return ctx.channel.send(content=arg)
 
 
 # Code #

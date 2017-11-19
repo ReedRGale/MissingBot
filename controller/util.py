@@ -18,18 +18,18 @@ from controller import calc
 # Command Encapsulations #
 
 
-async def add_character(m, author, channel):
+async def add_character(ctx):
     """A function to store a JSON entry of a character"""
 
     # Command is different for GMs
-    caller_is_gm = get_user_type(m, author, channel) == UserType.GM
+    caller_is_gm = get_user_type(ctx, ctx.author, ctx.channel) == UserType.GM
 
     if caller_is_gm:
         # Ask which player this is for.
         player_undecided = True
 
         while player_undecided:
-            rsp = await req(m, st.REQ_PLAYER, f_strip, expected_vars=1)
+            rsp = await req(ctx, st.REQ_PLAYER, f_strip, expected_vars=1)
             if rsp[0] == val.escape_value:
                 return val.escape_value
 
@@ -38,9 +38,9 @@ async def add_character(m, author, channel):
 
             # Check if player exists/isn't an observer
             if player is None:
-                await s(m, st.ERR_NOT_IN_GUILD + " " + st.ERR_REPEAT_1)
-            if get_user_type(m, player, channel) == UserType.OBSERVER.value:
-                await s(m, st.ERR_NOT_IN_RP + " " + st.ERR_REPEAT_2)
+                await s(ctx, st.ERR_NOT_IN_GUILD + " " + st.ERR_REPEAT_1)
+            if get_user_type(ctx, player, ctx.channel) == UserType.OBSERVER.value:
+                await s(ctx, st.ERR_NOT_IN_RP + " " + st.ERR_REPEAT_2)
             else:
                 # Now we know to associate the character with this player.
                 author = player
@@ -56,16 +56,16 @@ async def add_character(m, author, channel):
         # Loop to not have to repeat the command over and over if an input is wrong.
         while input_not_recorded:
             # Ask user for each field.
-            stat = await req(m, st.REQ_CHARACTER + field + " value:", f_none, expected_vars=1)
+            stat = await req(ctx, st.REQ_CHARACTER + field + " value:", f_none, expected_vars=1)
             if stat[0] == val.escape_value:
                 return val.escape_value
 
             # List of checks to make sure their input makes sense.
             if field == "NAME":
                 # Store the name of the character.
-                character = get_character_json(stat[0], m.channel)
+                character = get_character_json(stat[0], ctx.channel)
                 if character != {}:
-                    await s(m, st.ERR_PLAYER_EXIST + " " + st.rand_slack())
+                    await s(ctx, st.ERR_PLAYER_EXIST + " " + st.rand_slack())
                     return val.escape_value
 
                 # Set initial fields.
@@ -81,11 +81,11 @@ async def add_character(m, author, channel):
 
                 # Inform the user that -1 or less might be a bit low.
                 if not non_neg:
-                    await s(m, st.ERR_STAT_LT_ZERO)
+                    await s(ctx, st.ERR_STAT_LT_ZERO)
 
                 # Inform the user that 16 or more is too high.
                 if not lt_fift:
-                    await s(m, st.ERR_STAT_GT_FIFT)
+                    await s(ctx, st.ERR_STAT_GT_FIFT)
 
                 # User got it right, make sure to break this loop.
                 if non_neg and lt_fift:
@@ -93,33 +93,33 @@ async def add_character(m, author, channel):
                     input_not_recorded = False
 
             elif field != "NAME" and not calc.is_int(stat[0]):
-                await s(m, st.ERR_INV_FORM)
+                await s(ctx, st.ERR_INV_FORM)
 
     # Update character file.
     character_file = "model\\" \
-                     + str(m.guild.id) + "\\" \
+                     + str(ctx.guild.id) + "\\" \
                      + st.CANONS_FN + "\\" \
-                     + str(channel.category_id) + "\\" \
+                     + str(ctx.channel.category_id) + "\\" \
                      + st.CHARACTERS_FN + "\\" \
                      + character["NAME"]
     with open(character_file + ".json", "w") as fout:
         json.dump(character, fout, indent=1)
 
     # Update player prefs.
-    prefs = get_prefs(m, author, channel)
+    prefs = get_prefs(ctx, author, ctx.channel)
     prefs["relevant_character"] = character["NAME"]
     canon = "model\\" \
-            + str(m.guild.id) + "\\" \
+            + str(ctx.guild.id) + "\\" \
             + st.CANONS_FN + "\\" \
-            + str(channel.category_id) + "\\" \
+            + str(ctx.channel.category_id) + "\\" \
             + st.PLAYER_PREFS_FN + "\\"
     with open(canon + "\\" + str(author.id) + ".json", "w") as fout:
         json.dump(prefs, fout, indent=1)
 
 
-def get_characters(m):
+def get_characters(ctx):
 
-    canon_path = get_canon(m)
+    canon_path = get_canon(ctx)
 
     if not canon_path:
         return st.ERR_CHANNEL_NOT_IN_CANON
@@ -139,24 +139,24 @@ def get_characters(m):
     return all_names
 
 
-async def perform_skill_roll(m):
+async def perform_skill_roll(ctx):
     """Performs a basic skill roll."""
     # Request roll purpose.
-    purpose = await req(m, st.REQ_ROLL_PURPOSE, f_none, expected_vars=1)
+    purpose = await req(ctx, st.REQ_ROLL_PURPOSE, f_none, expected_vars=1)
     if purpose[0] == val.escape_value:
         return val.escape_value
 
     # Find the related character.
-    character = await req(m, st.REQ_ACTIVE_CHARACTER, f_none, expected_vars=1)
-    character = get_character_json(character[0], m.channel)
+    character = await req(ctx, st.REQ_ACTIVE_CHARACTER, f_none, expected_vars=1)
+    character = get_character_json(character[0], ctx.channel)
 
     # Request stats for roll.
-    stats = await check_against_alias(m, st.REQ_STATS, alias.STATS_ALIASES, f_alpha, expected_vars=2)
+    stats = await check_against_alias(ctx, st.REQ_STATS, alias.STATS_ALIASES, f_alpha, expected_vars=2)
     if stats[0] == val.escape_value:
         return val.escape_value
 
     # Retrieve mods.
-    mod = await ask_for_mods(m)
+    mod = await ask_for_mods(ctx)
     if mod[0] == val.escape_value:
         return val.escape_value
 
@@ -186,16 +186,16 @@ async def perform_skill_roll(m):
     return final_string
 
 
-async def new_combat(m):
+async def new_combat(ctx):
     """Begins a combat by opening the relevant channels"""
     # Prepare canon file path.
     canon = "model\\" \
-            + str(m.guild.id) + "\\" \
+            + str(ctx.guild.id) + "\\" \
             + st.CANONS_FN + "\\" \
-            + str(m.channel.category_id)
+            + str(ctx.channel.category_id)
 
     # Check player exists.
-    members = req_user(m, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
+    members = req_user(ctx, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
     if members[0] == val.escape_value:
         return val.escape_value
 
@@ -226,25 +226,25 @@ async def new_combat(m):
     for af in accounted_for:
         # Make private channels and assign roles to given players/GM.
         overwrites = {
-            m.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             members[af]: discord.PermissionOverwrite(read_messages=True)
         }
-        await m.guild.create_text_channel("Test_Guild", overwrites=overwrites)
+        await ctx.guild.create_text_channel("Test_Guild", overwrites=overwrites)
         await t(members[af].dm_channel, st.INF_CHANNELS_MADE)
 
 
-async def make_canon(m, member):
+async def make_canon(ctx):
     """Makes a canon folder and files."""
     # Ask for RP name
-    canon = await req(m, st.REQ_NEW_CANON, f_none, expected_vars=1)
+    canon = await req(ctx, st.REQ_NEW_CANON, f_none, expected_vars=1)
     if canon[0] == val.escape_value:
         return val.escape_value
 
     # Ask for GM.
-    gm = await req_user(m, st.REQ_USER_GM, 1, error=(st.ERR_ONLY_ONE_GM + ' ' + st.ERR_REPEAT_1), log_op="<=")
+    gm = await req_user(ctx, st.REQ_USER_GM, 1, error=(st.ERR_ONLY_ONE_GM + ' ' + st.ERR_REPEAT_1), log_op="<=")
     if gm[0] == val.escape_value:
         return val.escape_value
-    have_gm = gm[0] == member.mention
+    have_gm = gm[0] == ctx.author.mention
     borked = False
 
     # If the GM isn't the maker of the canon, ask them if they want to take on this hell.
@@ -265,18 +265,22 @@ async def make_canon(m, member):
         return st.INF_DENIED_GM
 
     # Make roles to discern who can do what.
-    roles = []
+    role, r_dat = list(), dict()
     for n in UserType:
-        roles.append(await m.guild.create_role(name=canon[0].upper() + " " + str(n).upper()))
+        r = await ctx.guild.create_role(name=canon[0].upper() + " " + str(n).upper())
+        role.append(r)
+        r_dat[str(n)] = r.id
 
     # Make category for the canon to reside in.
-    category = await m.guild.create_category(canon[0])
+    category = await ctx.guild.create_category(canon[0])
 
     # Make folder and initial docs
-    canon_dir = "model\\" + str(m.guild.id) + "\\" + st.CANONS_FN + "\\" + str(category.id)
+    canons_dir = "model\\" + str(ctx.guild.id) + "\\" + st.CANONS_FN
+    arch_dir = canons_dir + "\\" + st.ARCHIVES_FN
+    canon_dir = canons_dir + "\\" + str(category.id)
     if not os.path.exists(canon_dir):
         # Prepare all directories.
-        os.makedirs(canon_dir)
+        os.makedirs(arch_dir)
         os.makedirs(canon_dir + "\\" + st.CHARACTERS_FN)
         os.makedirs(canon_dir + "\\" + st.LOGS_FN)
         os.makedirs(canon_dir + "\\" + st.META_FN)
@@ -293,28 +297,28 @@ async def make_canon(m, member):
         role_dir, role_ids = canon_dir + "\\" + st.META_FN + "\\" + st.ROLES_FN, {}
         open(role_dir, "a").close()
         with open(role_dir, "w") as fout:
-            for r in roles:
+            for r in role:
                 role_type = r.name.split(" ")[1]
                 role_ids[role_type] = r.id
             json.dump(role_ids, fout, indent=1)
 
         # For each member in the channel, make a file and add them to the proper role.
-        for mem in m.guild.members:
+        for mem in ctx.guild.members:
             player_pref = pref_dir + "\\" + str(mem.id) + ".json"
             with open(player_pref, "a") as fout:
                 if gm[0] == mem.mention:
                     pref = {"user_type": UserType.GM.value, "relevant_character": None}
-                    await mem.add_roles(roles[2])
+                    await mem.add_roles(role[2])
                 else:
                     pref = {"user_type": UserType.OBSERVER.value, "relevant_character": None}
-                    await mem.add_roles(roles[0])
+                    await mem.add_roles(role[0])
                 json.dump(pref, fout, indent=1)
 
         status = st.INF_CANON_MADE
     else:
         status = st.ERR_CANON_EXISTS
 
-    # If this doesn't already exists make channels.
+    # If this doesn't already exist make channels.
     if status != st.ERR_CANON_EXISTS:
         # Prepare permission levels.
         n = discord.PermissionOverwrite(read_messages=False, send_messages=False)
@@ -323,44 +327,61 @@ async def make_canon(m, member):
 
         # Make channels for specific purposes per role.
         c = ["_IC", "_OOC", "_command_room", "_rules", "_meta", "_gm_notes"]
+        c_dat = dict()
 
         # IC Channel is locked on creation.
-        await m.guild.create_text_channel(canon[0] + c[0], category=category,
-                                          overwrites={roles[0]: r, roles[1]: r, roles[2]: r})
+        channel = await ctx.guild.create_text_channel(canon[0] + c[0], category=category,
+                                                      overwrites={role[0]: r, role[1]: r, role[2]: r})
+        c_dat[channel.name] = channel.id
 
         # OOC Channel is open to all on creation.
-        await m.guild.create_text_channel(canon[0] + c[1], category=category,
-                                          overwrites={roles[0]: rw, roles[1]: rw, roles[2]: rw})
+        channel = await ctx.guild.create_text_channel(canon[0] + c[1], category=category,
+                                                      overwrites={role[0]: rw, role[1]: rw, role[2]: rw})
+        c_dat[channel.name] = channel.id
 
         # Command Room is open only to players and the gm.
-        await m.guild.create_text_channel(canon[0] + c[2], category=category,
-                                          overwrites={roles[0]: n, roles[1]: rw, roles[2]: rw})
+        channel = await ctx.guild.create_text_channel(canon[0] + c[2], category=category,
+                                                      overwrites={role[0]: n, role[1]: rw, role[2]: rw})
+        c_dat[channel.name] = channel.id
 
         # Rules is for posting that which people should follow that the bot doesn't enforce.
-        await m.guild.create_text_channel(canon[0] + c[3], category=category,
-                                          overwrites={roles[0]: r, roles[1]: r, roles[2]: rw})
+        channel = await ctx.guild.create_text_channel(canon[0] + c[3], category=category,
+                                                      overwrites={role[0]: r, role[1]: r, role[2]: rw})
+        c_dat[channel.name] = channel.id
 
         # Meta is for viewing the meta-rules of the canon only. The GM only affects these indirectly.
-        await m.guild.create_text_channel(canon[0] + c[4], category=category,
-                                          overwrites={roles[0]: r, roles[1]: r, roles[2]: r})
+        channel = await ctx.guild.create_text_channel(canon[0] + c[4], category=category,
+                                                      overwrites={role[0]: r, role[1]: r, role[2]: r})
+        c_dat[channel.name] = channel.id
 
         # GM Notes is for the gm's eyes only.
-        await m.guild.create_text_channel(canon[0] + c[5], category=category,
-                                          overwrites={roles[0]: n, roles[1]: n, roles[2]: rw})
+        channel = await ctx.guild.create_text_channel(canon[0] + c[5], category=category,
+                                                      overwrites={role[0]: n, role[1]: n, role[2]: rw})
+        c_dat[channel.name] = channel.id
+
+        # Record untouchable instance of data.
+        meta_dir = canon_dir + "\\" + st.META_FN + "\\" + str(st.IDS_FN)
+        with open(meta_dir, "a") as fout:
+            json.dump({"channels": c_dat, "roles": r_dat}, fout, indent=1)
+
     return status
 
+
+async def delete_canon(ctx):
+    """Deletes a canon and archives its data in case its remade."""
+    pass
 
 # Formatters #
 
 
-async def f_alpha(m, command_info, array, expected_vars, log_op="<="):
+async def f_alpha(ctx, command_info, array, expected_vars, log_op="<="):
     """A formatting helper method that makes sure that a string is only alphabetical.
     Read log_op as:  I expect the arguments to be <log_op> <expected_vars>."""
     improperly_formatted = True
 
     # Define proper check.
-    a = m.author
-    c = m.channel
+    a = ctx.author
+    c = ctx.channel
 
     def check(resp): return resp.author == a and resp.channel == c
 
@@ -370,18 +391,18 @@ async def f_alpha(m, command_info, array, expected_vars, log_op="<="):
 
         # Escape command early.
         if command_info == val.escape_value:
-            await s(m, st.ESCAPE)
+            await s(ctx, st.ESCAPE)
             return val.escape_value
 
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
-            await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
 
@@ -392,14 +413,14 @@ async def f_alpha(m, command_info, array, expected_vars, log_op="<="):
     return array
 
 
-async def f_numer(m, command_info, array, expected_vars, log_op='<='):
+async def f_numer(ctx, command_info, array, expected_vars, log_op='<='):
     """A formatting helper method that makes sure that a string is only numeric."""
     # Read log_op as:  I expect the arguments to be <log_op> <expected_vars>.
     improperly_formatted = True
 
     # Define proper check.
-    a = m.author
-    c = m.channel
+    a = ctx.author
+    c = ctx.channel
 
     def check(resp): return resp.author == a and resp.channel == c
 
@@ -409,18 +430,18 @@ async def f_numer(m, command_info, array, expected_vars, log_op='<='):
 
         # Escape command early.
         if command_info == val.escape_value:
-            await s(m, st.ESCAPE)
+            await s(ctx, st.ESCAPE)
             return val.escape_value
 
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
-            await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
 
@@ -431,14 +452,14 @@ async def f_numer(m, command_info, array, expected_vars, log_op='<='):
     return array
 
 
-async def f_none(m, command_info, array, expected_vars=1, log_op="<="):
+async def f_none(ctx, command_info, array, expected_vars=1, log_op="<="):
     """A formatting helper method that makes sure that a set of values is only so many arguments."""
     # Read log_op as:  I expect the arguments to be <log_op> <expected_vars>.
     improperly_formatted = True
 
     # Define proper check.
-    a = m.author
-    c = m.channel
+    a = ctx.author
+    c = ctx.channel
 
     def check(resp): return resp.author == a and resp.channel == c
 
@@ -448,7 +469,7 @@ async def f_none(m, command_info, array, expected_vars=1, log_op="<="):
 
         # Escape command early.
         if command_info == val.escape_value:
-            await s(m, st.ESCAPE)
+            await s(ctx, st.ESCAPE)
             return val.escape_value
 
         single_statement = [""]
@@ -459,7 +480,7 @@ async def f_none(m, command_info, array, expected_vars=1, log_op="<="):
                 single_statement[0] += bucket if bucket != len(array) - 1 else bucket + ','
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         else:
@@ -468,14 +489,14 @@ async def f_none(m, command_info, array, expected_vars=1, log_op="<="):
     return single_statement
 
 
-async def f_strip(m, command_info, array, expected_vars, log_op='<='):
+async def f_strip(ctx, command_info, array, expected_vars, log_op='<='):
     """A formatting helper method that makes sure that a string is only numeric."""
     # Read log_op as:  I expect the arguments to be <log_op> <expected_vars>.
     improperly_formatted = True
 
     # Define proper check.
-    a = m.author
-    c = m.channel
+    a = ctx.author
+    c = ctx.channel
 
     def check(resp): return resp.author == a and resp.channel == c
 
@@ -485,18 +506,18 @@ async def f_strip(m, command_info, array, expected_vars, log_op='<='):
 
         # Escape command early.
         if command_info == val.escape_value:
-            await s(m, st.ESCAPE)
+            await s(ctx, st.ESCAPE)
             return val.escape_value
 
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
-            await s(m, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
-            await s(m, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
             array = formatted_rsp.content.split(',')
 
@@ -539,10 +560,10 @@ def make_general_player_prefs(guild):
                 json.dump(pref, fout, indent=1)
 
 
-def get_canon(m):
+def get_canon(ctx):
     """Returns the category file path or None of doesn't exist."""
-    if m.channel.category_id:
-        canon = "model\\" + str(m.guild.id) + "\\" + st.CANONS_FN + "\\" + str(m.channel.category_id)
+    if ctx.channel.category_id:
+        canon = "model\\" + str(ctx.guild.id) + "\\" + st.CANONS_FN + "\\" + str(ctx.channel.category_id)
         return canon if os.path.exists(canon) else None
 
 
@@ -586,7 +607,7 @@ def redeem_alias(alias_i, aliases):
     return None
 
 
-def return_member(m, mention, user_id=""):
+def return_member(ctx, mention, user_id=""):
     """Returns the user by mention or None, if none found. If an ID is provided, returns based off of that."""
 
     # # If ID provided, return what the bot would return. # #
@@ -598,7 +619,7 @@ def return_member(m, mention, user_id=""):
 
     # Link members to their mentions.
     members = {}
-    for mem in m.guild.members:
+    for mem in ctx.guild.members:
         members[mem.mention] = mem
 
     return members.get(mention)
@@ -634,20 +655,20 @@ def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_typ
     return final_string
 
 
-async def ask_for_mods(m):
+async def ask_for_mods(ctx):
     """Asks the user if they would like to add modifications to a roll."""
     # Define Lists
     mod_r, mod_v = [], []  # Reasons, Values
 
     # Ask for confirmation on modifiers.
-    confirm = await check_against_alias(m, st.ASK_IF_MODS, alias.CONFIRM_ALIASES, f_alpha, expected_vars=1)
+    confirm = await check_against_alias(ctx, st.ASK_IF_MODS, alias.CONFIRM_ALIASES, f_alpha, expected_vars=1)
     if confirm[0] == val.escape_value:
         return val.escape_value
 
     # Check confirm status.
     while confirm[0].lower() in alias.AFFIRM:
         # Request mod reason.
-        reason = await req(m, st.REQ_MOD_REASON, f_none, expected_vars=1)
+        reason = await req(ctx, st.REQ_MOD_REASON, f_none, expected_vars=1)
         if reason[0] == val.escape_value:
             return val.escape_value
         mod_r.append(reason[0])
@@ -656,17 +677,17 @@ async def ask_for_mods(m):
 
         while no_int:
             # Request mod amount.
-            amount = await req(m, st.REQ_MOD_AMOUNT, f_numer, expected_vars=1)
+            amount = await req(ctx, st.REQ_MOD_AMOUNT, f_numer, expected_vars=1)
             if amount[0] == val.escape_value:
                 return val.escape_value
             no_int = not calc.is_int(amount[0])
             if no_int:
-                await s(m, st.ERR_INV_FORM)
+                await s(ctx, st.ERR_INV_FORM)
 
         mod_v.append(amount[0])
 
         # Ask if more mods.
-        confirm = await check_against_alias(m, st.ASK_IF_MORE_MODS, alias.CONFIRM_ALIASES,
+        confirm = await check_against_alias(ctx, st.ASK_IF_MORE_MODS, alias.CONFIRM_ALIASES,
                                             f_alpha, expected_vars=1)
         if confirm[0] == val.escape_value:
             return val.escape_value
@@ -674,11 +695,11 @@ async def ask_for_mods(m):
     return [mod_r, mod_v]
 
 
-async def check_against_alias(m, request_str, aliases, formatter, expected_vars):
+async def check_against_alias(ctx, request_str, aliases, formatter, expected_vars):
     """Compares a set of aliases [a dictionary of lists] to a list of values"""
     # Prime the pump.
     i, used = 0, []
-    values = await req(m, request_str, formatter, expected_vars)
+    values = await req(ctx, request_str, formatter, expected_vars)
     if values[0] == val.escape_value:
         return val.escape_value
 
@@ -692,11 +713,11 @@ async def check_against_alias(m, request_str, aliases, formatter, expected_vars)
                     used.append(name)
                 elif a.lower() == values[i].lower() and name in used:  # Alias found & used prev.
                     # Inform the user that they've repeated an argument.
-                    await s(m, st.ERR_REPEAT_ARG + values[i] + "!")
+                    await s(ctx, st.ERR_REPEAT_ARG + values[i] + "!")
                     invalid = False
                     # Reprime the pump.
                     i, used = 0, []
-                    values = await req(m, st.ERR_REPEAT_1, formatter, expected_vars)
+                    values = await req(ctx, st.ERR_REPEAT_1, formatter, expected_vars)
                     if values[0] == val.escape_value:
                         return val.escape_value
                     break
@@ -704,10 +725,10 @@ async def check_against_alias(m, request_str, aliases, formatter, expected_vars)
                 break
         if invalid:  # Alias unfound.
             # Inform the user that their argument is invalid.
-            await s(m, st.ERR_INV_ARG + values[i] + "!")
+            await s(ctx, st.ERR_INV_ARG + values[i] + "!")
             # Reprime the pump.
             i, used = 0, []
-            values = await req(m, st.ERR_REPEAT_1, formatter, expected_vars)
+            values = await req(ctx, st.ERR_REPEAT_1, formatter, expected_vars)
             if values[0] == val.escape_value:
                 return val.escape_value
 
@@ -717,12 +738,12 @@ async def check_against_alias(m, request_str, aliases, formatter, expected_vars)
     return values
 
 
-async def check_against_list(m, request_str, comparators, formatter, expected_vars):
+async def check_against_list(ctx, request_str, comparators, formatter, expected_vars):
     """Compares a set of comparators to a list of values"""
 
     # Prime the pump.
     i, used = 0, []
-    values = await req(m, request_str, formatter, expected_vars)
+    values = await req(ctx, request_str, formatter, expected_vars)
     if values[0] == val.escape_value:
         return val.escape_value
 
@@ -737,20 +758,20 @@ async def check_against_list(m, request_str, comparators, formatter, expected_va
                 break
             elif c.lower() == values[i].lower() and c in used:  # Value found & used prev.
                 # Inform the user that they've repeated an argument.
-                await s(m, st.ERR_REPEAT_ARG + values[i] + "! " + st.ERR_REPEAT_1)
+                await s(ctx, st.ERR_REPEAT_ARG + values[i] + "! " + st.ERR_REPEAT_1)
                 invalid = False
                 # Reprime the pump.
                 i, used = 0, []
-                values = await req(m, request_str, formatter, expected_vars)
+                values = await req(ctx, request_str, formatter, expected_vars)
                 if values[0] == val.escape_value:
                     return val.escape_value
                 break
         if invalid:  # Alias unfound.
             # Inform the user that their argument is invalid.
-            await s(m, st.ERR_INV_ARG + values[i] + "! " + st.ERR_REPEAT_1)
+            await s(ctx, st.ERR_INV_ARG + values[i] + "! " + st.ERR_REPEAT_1)
             # Reprime the pump.
             i, used = 0, []
-            values = await req(m, request_str, formatter, expected_vars)
+            values = await req(ctx, request_str, formatter, expected_vars)
             if values[0] == val.escape_value:
                 return val.escape_value
 
@@ -779,43 +800,43 @@ async def wait_for_combat_affirmation(author, channel):
     return affirmed
 
 
-async def req(m, req_str, formatter, expected_vars, log_op="<="):
+async def req(ctx, req_str, formatter, expected_vars, log_op="<="):
     """Ask a request for the user and return that request as a list of inputs or return an escape character."""
     # Ask the request.
-    await s(m, req_str)
+    await s(ctx, req_str)
 
     # Define check
-    a = m.author
-    c = m.channel
+    a = ctx.author
+    c = ctx.channel
 
     def check(resp): return resp.author == a and resp.channel == c
 
     # Wait for response.
     rsp = await val.bot.wait_for("message", check=check)
     values = rsp.content.split(',')
-    values = await formatter(m, rsp.content, values, expected_vars, log_op)
+    values = await formatter(ctx, rsp.content, values, expected_vars, log_op)
     if values[0] == val.escape_value:
         return val.escape_value
     return values
 
 
-async def req_user(m, request_str, expected_vars, log_op=">=", error=st.ERR_INV_FORM):
+async def req_user(ctx, request_str, expected_vars, log_op=">=", error=st.ERR_INV_FORM):
     """Speeds up asking for a player."""
     mems = [""]  # Dummy data to prime the pump.
-    while not members_exist(m, mems):
-        mems = await req(m, request_str, f_none, expected_vars=expected_vars, log_op=log_op)
+    while not members_exist(ctx, mems):
+        mems = await req(ctx, request_str, f_none, expected_vars=expected_vars, log_op=log_op)
         if mems[0] == val.escape_value:
             return val.escape_value
-        elif not members_exist(m, mems):
-            await s(m, error)
+        elif not members_exist(ctx, mems):
+            await s(ctx, error)
     return mems
 
 
-def members_exist(m, m_list):
+def members_exist(ctx, m_list):
     """Helper method to check to see if a set of members exist."""
     all_exist = True
     for mem in m_list:
-        if not return_member(m, mem):
+        if not return_member(ctx, mem):
             all_exist = False
             break
     return all_exist
@@ -830,9 +851,9 @@ def get_app_token():
 # Syntactical Candy #
 
 
-def s(m, arg):
+def s(ctx, arg):
     """Syntactical candy:  sends a message."""
-    return m.channel.send(content=arg)
+    return ctx.channel.send(content=arg)
 
 
 def t(target, arg):

@@ -142,6 +142,7 @@ ERR_NOT_IN_GUILD = "Okay so maybe you really like that person. But they aren't h
 # Other #
 
 
+ARCHIVES_FN = "_archives"
 CHARACTERS_FN = "characters"
 META_FN = "meta"
 LOGS_FN = "logs"
@@ -149,6 +150,7 @@ CANONS_FN = "canons"
 PLAYER_PREFS_FN = "player_prefs"
 ROLES_FN = "roles.json"
 EXCEPTIONS_FN = "command_exceptions.json"
+IDS_FN = "canon_ids.json"
 SUCCESS = "S - "
 FAILURE = "F - "
 AGAIN = "A - "
@@ -165,5 +167,5 @@ C_SO = "Now, if you'll excuse me, I'm going to toy with your character's stats. 
 D_SO = "Now buzz off. I've got 'important' things to get to. ...I'm just messing with you, I've got nothing but time."
 E_SO = "But, uh, come back when you have something interesting for me to do, 'kay?"
 F_SO = "Well, another day, another five-billion commands to handle."
-G_SO = "\n\n...man, I live the good life. Bossed around, yet underworked and overpaid. Just how I like it."
+G_SO = "\n\n...man, I live the good life. Underworked and overpaid. Just how I like it."
 ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO]
