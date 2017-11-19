@@ -369,6 +369,9 @@ async def make_canon(ctx):
 
 async def delete_canon(ctx):
     """Deletes a canon and archives its data in case its remade."""
+    # TODO: Retrieve permission to do this from members.
+    # TODO: Delete categories and roles in list
+    # TODO: Move canon data to _archive
     pass
 
 # Formatters #
