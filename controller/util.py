@@ -280,7 +280,8 @@ async def make_canon(ctx):
     canon_dir = canons_dir + "\\" + str(category.id)
     if not os.path.exists(canon_dir):
         # Prepare all directories.
-        os.makedirs(arch_dir)
+        if not os.path.exists(arch_dir):
+            os.makedirs(arch_dir)
         os.makedirs(canon_dir + "\\" + st.CHARACTERS_FN)
         os.makedirs(canon_dir + "\\" + st.LOGS_FN)
         os.makedirs(canon_dir + "\\" + st.META_FN)
@@ -438,6 +439,12 @@ async def delete_canon(ctx):
                     break
 
         # Move canon data to _archive
+        arch_dir = "model\\" \
+                   + str(ctx.guild.id) + "\\" \
+                   + st.CANONS_FN + "\\" \
+                   + st.ARCHIVES_FN + "\\" \
+                   + ctx.guild.get_channel(ctx.channel.category_id).name
+        os.rename(canon_dir, arch_dir)
 
     elif no >= majority and yes >= majority or yes < majority and no < majority:
         return st.ERR_VOTE_FAILED
