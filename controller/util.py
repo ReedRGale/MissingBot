@@ -8,6 +8,7 @@ import json
 import os
 import re
 import discord
+import math
 
 from multiprocessing.pool import ThreadPool
 from model import st, alias, reg, val
@@ -20,9 +21,8 @@ from controller import calc
 
 async def add_character(ctx):
     """A function to store a JSON entry of a character"""
-
-    # Command is different for GMs
-    caller_is_gm = get_user_type(ctx, ctx.author, ctx.channel) == UserType.GM
+    # GMs can assign users characters.
+    caller_is_gm = get_user_type(ctx.memeber, ctx.channel) == UserType.GM
 
     if caller_is_gm:
         # Ask which player this is for.
@@ -180,8 +180,8 @@ async def perform_skill_roll(ctx):
 
     # Roll the die and make the string.
     successes = calc.skill_roll(dice_pool)
-    final_string = skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose,
-                                     norm_stat_types, stats, successes)
+    final_string = st.skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose,
+                                        norm_stat_types, stats, successes)
 
     return final_string
 
@@ -194,19 +194,19 @@ async def new_combat(ctx):
             + st.CANONS_FN + "\\" \
             + str(ctx.channel.category_id)
 
-    # Check player exists.
-    members = req_user(ctx, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
-    if members[0] == val.escape_value:
+    # Ask for players.
+    players = req_user(ctx, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
+    if players[0] == val.escape_value:
         return val.escape_value
 
     # Notify users.
     async_results = {}
 
-    for mem in members:
+    for mem in players:
         dm = return_member(mem).dm_channel
         await t(dm, st.ASK_IF_FIGHT)
         pool = ThreadPool()
-        async_results[mem] = pool.apply_async(wait_for_combat_affirmation, (return_member(mem), dm))
+        async_results[mem] = pool.apply_async(wait_for_affirmation, (ctx, return_member(mem), dm))
 
     # Process results...
     accounted_for = []
@@ -214,23 +214,23 @@ async def new_combat(ctx):
     borked = False
 
     while async_results and not borked:
-        for mem in members:
+        for mem in players:
             if async_results[mem].get() in alias.AFFIRM:
                 queued.append(mem)
             elif async_results[mem].get() in alias.DENY:
                 borked = True
         for v in queued:
             accounted_for.append(v)
-            del members[v]
+            del players[v]
 
     for af in accounted_for:
         # Make private channels and assign roles to given players/GM.
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            members[af]: discord.PermissionOverwrite(read_messages=True)
+            players[af]: discord.PermissionOverwrite(read_messages=True)
         }
         await ctx.guild.create_text_channel("Test_Guild", overwrites=overwrites)
-        await t(members[af].dm_channel, st.INF_CHANNELS_MADE)
+        await t(players[af].dm_channel, st.INF_CHANNELS_MADE)
 
 
 async def make_canon(ctx):
@@ -269,7 +269,7 @@ async def make_canon(ctx):
     for n in UserType:
         r = await ctx.guild.create_role(name=canon[0].upper() + " " + str(n).upper())
         role.append(r)
-        r_dat[str(n)] = r.id
+        r_dat[r.name] = r.id
 
     # Make category for the canon to reside in.
     category = await ctx.guild.create_category(canon[0])
@@ -369,10 +369,80 @@ async def make_canon(ctx):
 
 async def delete_canon(ctx):
     """Deletes a canon and archives its data in case its remade."""
-    # TODO: Retrieve permission to do this from members.
-    # TODO: Delete categories and roles in list
-    # TODO: Move canon data to _archive
-    pass
+    # Collect all players in canon.
+    players = list()
+
+    if not get_canon(ctx):
+        return st.ERR_CANON_NONEXIST
+
+    for mem in ctx.guild.members:
+        user = get_user_type(mem, ctx.channel)
+        if user == UserType.GM.value or user == UserType.PLAYER.value:
+            players.append(mem)
+
+    # Prepare categories.
+    yes, no = 0, 0
+
+    # Notify users.
+    async_results = dict()
+
+    for mem in players:
+        if get_user_type(mem, ctx.channel) == UserType.PLAYER:
+            await t(mem.dm_channel, st.ASK_IF_DELETE)
+            pool = ThreadPool()
+            async_results[mem] = pool.apply_async(wait_for_affirmation, (ctx, mem, mem.dm_channel))
+        else:
+            yes += 1
+
+    # Process results...
+    accounted_for, queued = list(), list()
+    majority = math.ceil(len(players) / 2)
+
+    while yes < majority and no < majority:
+        for mem in players:
+            if async_results[mem].get() in alias.AFFIRM:
+                yes += 1
+                queued.append(mem)
+            elif async_results[mem].get() in alias.DENY:
+                no += 1
+                queued.append(mem)
+        for v in queued:
+            accounted_for.append(v)
+            del players[v]
+
+    if majority <= yes:
+        # Prepare the directory we're going to move.
+        canon_dir = "model\\" \
+                    + str(ctx.guild.id) + "\\" \
+                    + st.CANONS_FN + "\\" \
+                    + str(ctx.channel.category_id)
+
+        # Delete categories and roles in list.
+        meta_dir = canon_dir + "\\" \
+                   + st.META_FN + "\\" \
+                   + str(st.IDS_FN)
+
+        with open(meta_dir, "r") as fout:
+            ids_json = json.load(fout)
+            for c in ctx.guild.channels:
+                if c.category_id == ctx.channel.category_id and ids_json["channels"].get(c.name):
+                    await c.delete(reason=st.INF_DELETE_CHANNEL)
+
+            for r in ctx.guild.roles:
+                if ids_json["roles"].get(r.name):
+                    await r.delete(reason=st.INF_DELETE_ROLE)
+
+            for c in ctx.guild.channels:
+                if c.id == ctx.channel.category_id:
+                    await c.delete()
+                    break
+
+        # Move canon data to _archive
+
+    elif no >= majority and yes >= majority or yes < majority and no < majority:
+        return st.ERR_VOTE_FAILED
+    else:
+        return st.INF_DENIED_DELETE
 
 # Formatters #
 
@@ -572,10 +642,17 @@ def get_canon(ctx):
 
 def get_prefs(member, channel):
     """Returns the prefs of the user as a JSON."""
-    canon = "model\\" + st.CANONS_FN + "\\" + str(channel.category_id) + "\\" + st.PLAYER_PREFS_FN
-    with open(canon + "\\" + str(member.id), "r") as fin:
-        prefs = json.load(fin)
-    return prefs
+    pref_path = "model\\" \
+                + str(channel.guild.id) + "\\" \
+                + st.CANONS_FN + "\\" \
+                + str(channel.category_id) + "\\" \
+                + st.PLAYER_PREFS_FN + "\\" \
+                + str(member.id) + ".json"
+    if os.path.exists(pref_path):
+        with open(pref_path, "r") as fin:
+            prefs = json.load(fin)
+        return prefs
+    return None
 
 
 def get_user_type(member, channel):
@@ -611,7 +688,7 @@ def redeem_alias(alias_i, aliases):
 
 
 def return_member(ctx, mention, user_id=""):
-    """Returns the user by mention or None, if none found. If an ID is provided, returns based off of that."""
+    """Returns the user by mention or None, if none found. If an ID is provided, returns based off of that instead."""
 
     # # If ID provided, return what the bot would return. # #
 
@@ -626,36 +703,6 @@ def return_member(ctx, mention, user_id=""):
         members[mem.mention] = mem
 
     return members.get(mention)
-
-
-def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_types, stats, successes):
-    """Formats a skill roll final string."""
-    if len(mod_r) > 0:
-        mod_s = "Modifiers: "
-        for i in range(len(mod_r)):
-            if i < len(mod_r) - 1:
-                mod_s += mod_r[i] + " "
-                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + "), "
-            else:
-                mod_s += mod_r[i] + " "
-                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + ") "
-    else:
-        mod_s = "No Modifiers."
-
-    if dice_pool > 0:
-        pool_s = ("Base Pool: " + str(base_pool) + " ==> Dice Pool: " + str(dice_pool) if dice_pool != base_pool
-                  else "Dice Pool: " + str(dice_pool))
-    else:
-        pool_s = "Luck Roll..."
-
-    final_string = \
-        "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
-                                    else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
-        + "> " + mod_s + '\n' \
-        + "> " + pool_s + '\n' \
-        + "> " + successes
-
-    return final_string
 
 
 async def ask_for_mods(ctx):
@@ -781,7 +828,7 @@ async def check_against_list(ctx, request_str, comparators, formatter, expected_
     return values
 
 
-async def wait_for_combat_affirmation(author, channel):
+async def wait_for_affirmation(ctx, author, channel):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
     affirmed = None
 
@@ -798,7 +845,7 @@ async def wait_for_combat_affirmation(author, channel):
         affirmed = affirmed.content
         if affirmed.lower() not in alias.AFFIRM and affirmed.lower() not in alias.DENY:
             affirmed = None
-            await s(affirmed, st.ERR_NOT_YES_OR_NO)
+            await s(ctx, st.ERR_NOT_YES_OR_NO)
 
     return affirmed
 

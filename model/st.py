@@ -20,14 +20,12 @@ INF_CANON_MADE = "All the paperwork is in order. Enjoy the new world, I guess."
 INF_CANON_SET = "Well, here you are. Enjoy your stay or something."
 INF_NOT_GM = "Wise choice. I'll let that jerk know you don't want any part of this nonsense."
 INF_DENIED_GM = "They made the smart choice and chose not to be GM. Call me again when you have someone for the job."
+INF_DENIED_DELETE = "Seems people still like this world. At the very least, the vote failed. The show goes on, for now."
+INF_DELETE_CHANNEL = "I zorked this because I was told to by the GM and the players voted for it."
+INF_DELETE_ROLE = "I blanged this because I was told to by the GM and the players agreed."
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
-
-
-def rand_slack():
-    """Returns a random slack off message."""
-    return random.choice(ALL_SLACK)
 
 
 # Help Messages #
@@ -40,6 +38,14 @@ NN_HELP = "To Call: '~dd newcanon'\n\n" \
           "the RP will become Players and through me can be granted privileges to call certain commands--to make " \
           "characters and start combat for instance. Otherwise, this sets the stage for walking the GM through the " \
           "metarules process wherein they choose the features I provide that they wish to use for their RP."
+
+DN_BRIEF = "'DeleteCanon' is a command to delete an RP and its associated channels and roles."
+DN_HELP = "To Call: '~dd newcanon'\n\n" \
+          "Call within the canon to ask all players if the canon should be deleted and the RP ended... " \
+          "for the time being. If the vote goes through, I delete the channels, category and roles. I do, however," \
+          "hold onto player prefs, character stats, locations and other useful data that was generated through the" \
+          "course of the RP. Just in case, you know. If you call newcanon with the same name as deleted canon," \
+          "I will automatically link the data from the previous RP up with the newly created one. You're welcome."
 
 FT_BRIEF = "'Forecast' is a command that should give you an idea of how likely " \
            "getting any particular amount of successes will be."
@@ -109,6 +115,8 @@ ASK_IF_GM = "Are you really sure you want to do this? Managing an RP is hard and
             "nominated for something you don't want to do. If so, just tell me 'no.' If not... well, your funeral. " \
             "You know what they say about funerals though. Can't spell it without 'fun.' \n\n" \
             "Anyway. What'll it be? Will you be this canon's god (world/RP)?"
+ASK_IF_DELETE = "So, seems the time for this world has come to a close... according to a GM anyway. Do you agree?" \
+                "Yes? No? Nothing in between now, I don't like ambiguity when it comes to these things."
 
 
 # Error Messages #
@@ -121,7 +129,7 @@ ERR_NOT_ENOUGH_ARGS = "Hey. Buddy. You need at least this many arguments to use 
 ERR_PLAYER_EXIST = "Yo. So... uh... don't try to like... take this character's identity. K? They already exist. " \
                    "Let 'em be."
 ERR_PLAYER_NONEXIST = "Yo. So... uh... I don't know how to put this nicely. But... that player doesn't... exist? Yeah."
-ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one you just wrote exists less than the other " \
+ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one exists less than the other " \
                      "worlds that don't exist. That is, I don't have it in my records."
 ERR_ONLY_ONE_GM = "Alright, let's start with just one GM. Simplifies things for now. Later you can add multiple GMs." \
                   "But for now... let's keep it simple."
@@ -137,6 +145,9 @@ ERR_CANON_EXISTS = "This world is kind of already a thing. Don't like, get all u
 ERR_NOT_IN_RP = "Hey. This person is just an observer here. What're ya tryin to pull?"
 ERR_NOT_IN_GUILD = "Okay so maybe you really like that person. But they aren't here. I can't work with people that " \
                    "aren't here."
+ERR_VOTE_FAILED = "So... something went wrong with the vote. Like, pretty darn wrong. Like, we have more members " \
+                  "voting than are in the canon kind of wrong. Let's uh... let's call the command a later time and " \
+                  "see if we can't do something about that."
 
 
 # Other #
@@ -154,6 +165,44 @@ IDS_FN = "canon_ids.json"
 SUCCESS = "S - "
 FAILURE = "F - "
 AGAIN = "A - "
+
+
+# Methods #
+
+
+def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_types, stats, successes):
+    """Formats a skill roll final string."""
+    if len(mod_r) > 0:
+        mod_s = "Modifiers: "
+        for i in range(len(mod_r)):
+            if i < len(mod_r) - 1:
+                mod_s += mod_r[i] + " "
+                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + "), "
+            else:
+                mod_s += mod_r[i] + " "
+                mod_s += '(' + ('+' + mod_v[i] if int(mod_v[i]) > -1 else mod_v[i]) + ") "
+    else:
+        mod_s = "No Modifiers."
+
+    if dice_pool > 0:
+        pool_s = ("Base Pool: " + str(base_pool) + " ==> Dice Pool: " + str(dice_pool) if dice_pool != base_pool
+                  else "Dice Pool: " + str(dice_pool))
+    else:
+        pool_s = "Luck Roll..."
+
+    final_string = \
+        "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
+                                    else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
+        + "> " + mod_s + '\n' \
+        + "> " + pool_s + '\n' \
+        + "> " + successes
+
+    return final_string
+
+
+def rand_slack():
+    """Returns a random slack off message."""
+    return random.choice(ALL_SLACK)
 
 
 # Snark #

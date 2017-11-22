@@ -66,23 +66,24 @@ async def on_command(ctx):
         # For each canon, make sure of the player_prefs and roles.
         for mem in ctx.guild.members:
             for c in c_names:
-                pref_path = guild_path + "\\" \
-                            + c + "\\" \
-                            + st.PLAYER_PREFS_FN + "\\" \
-                            + str(mem.id) + ".json"
+                if c != st.ARCHIVES_FN:
+                    pref_path = guild_path + "\\" \
+                                + c + "\\" \
+                                + st.PLAYER_PREFS_FN + "\\" \
+                                + str(mem.id) + ".json"
 
-                if not os.path.exists(pref_path):
-                    open(pref_path, "a").close()
-                    with open(pref_path, "w") as fout:
-                        pref = {"user_type": UserType.OBSERVER.value, "relevant_character": None}
-                        json.dump(pref, fout, indent=1)
+                    if not os.path.exists(pref_path):
+                        open(pref_path, "a").close()
+                        with open(pref_path, "w") as fout:
+                            pref = {"user_type": UserType.OBSERVER.value, "relevant_character": None}
+                            json.dump(pref, fout, indent=1)
 
-                    with open(guild_path + "\\" + c + "\\" + st.ROLES_FN, "r") as fin:
-                        role_id = json.load(fin)[str(UserType.OBSERVER)]
-                        for r in mem.guild.roles:
-                            if role_id == r.id:
-                                role = r
-                        await mem.add_roles(role)
+                        with open(guild_path + "\\" + c + "\\" + st.ROLES_FN, "r") as fin:
+                            role_id = json.load(fin)[str(UserType.OBSERVER)]
+                            for r in mem.guild.roles:
+                                if role_id == r.id:
+                                    role = r
+                            await mem.add_roles(role)
 
 
 @val.bot.event
@@ -105,16 +106,25 @@ async def on_ready():
 @val.bot.command(name="newcanon", help=st.NN_HELP, brief=st.NN_BRIEF)
 async def new_canon(ctx):
     """Makes a new canon, including folders and player prefs."""
-    if_in_canon = True
     status = await util.make_canon(ctx.message)
     if status == val.escape_value:
         return
     return await ctx.send(status + " " + st.rand_slack())
 
 
+@val.bot.command(name="deletecanon", help=st.DN_HELP, brief=st.DN_BRIEF)
+async def delete_canon(ctx):
+    """Deletes a canon, though preserves folders and player prefs."""
+    status = await util.delete_canon(ctx.message)
+    if status == val.escape_value:
+        return
+    elif not status:
+        return
+    return await ctx.send(status + " " + st.rand_slack())
+
+
 @val.bot.command(name="newcharacter", help=st.NR_HELP, brief=st.NR_BRIEF)
 async def new_character(ctx):
-    if_in_canon = True
     e_nr = await util.add_character(ctx.message, ctx.message.author, ctx.message.channel)
     if e_nr == val.escape_value:
         return
