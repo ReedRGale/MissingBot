@@ -9,7 +9,9 @@ import os
 import re
 import discord
 import math
+import asyncio
 
+from asyncio import tasks, futures, coroutines
 from multiprocessing.pool import ThreadPool
 from model import st, alias, reg, val
 from model.enums import UserType
@@ -22,7 +24,7 @@ from controller import calc
 async def add_character(ctx):
     """A function to store a JSON entry of a character"""
     # GMs can assign users characters.
-    caller_is_gm = get_user_type(ctx.memeber, ctx.channel) == UserType.GM
+    caller_is_gm = get_user_type(ctx.message.author, ctx.channel) == UserType.GM
 
     if caller_is_gm:
         # Ask which player this is for.
@@ -122,7 +124,7 @@ def get_characters(ctx):
     canon_path = get_canon(ctx)
 
     if not canon_path:
-        return st.ERR_CHANNEL_NOT_IN_CANON
+        return st.ERR_NOT_IN_CANON
 
     # Load in file.
     c_names, c_json = os.listdir(canon_path + "\\" + st.CHARACTERS_FN), {}
@@ -200,12 +202,11 @@ async def new_combat(ctx):
         return val.escape_value
 
     # Notify users.
-    async_results = {}
+    async_results, pool = dict(), ThreadPool(processes=len(players))
 
     for mem in players:
         dm = return_member(mem).dm_channel
         await t(dm, st.ASK_IF_FIGHT)
-        pool = ThreadPool()
         async_results[mem] = pool.apply_async(wait_for_affirmation, (ctx, return_member(mem), dm))
 
     # Process results...
@@ -240,6 +241,8 @@ async def make_canon(ctx):
     if canon[0] == val.escape_value:
         return val.escape_value
 
+    canon = canon[0].replace(" ", "_")
+
     # Ask for GM.
     gm = await req_user(ctx, st.REQ_USER_GM, 1, error=(st.ERR_ONLY_ONE_GM + ' ' + st.ERR_REPEAT_1), log_op="<=")
     if gm[0] == val.escape_value:
@@ -267,12 +270,12 @@ async def make_canon(ctx):
     # Make roles to discern who can do what.
     role, r_dat = list(), dict()
     for n in UserType:
-        r = await ctx.guild.create_role(name=canon[0].upper() + " " + str(n).upper())
+        r = await ctx.guild.create_role(name=canon.upper() + " " + str(n).upper())
         role.append(r)
         r_dat[r.name] = r.id
 
     # Make category for the canon to reside in.
-    category = await ctx.guild.create_category(canon[0])
+    category = await ctx.guild.create_category(canon)
 
     # Make folder and initial docs
     canons_dir = "model\\" + str(ctx.guild.id) + "\\" + st.CANONS_FN
@@ -331,32 +334,32 @@ async def make_canon(ctx):
         c_dat = dict()
 
         # IC Channel is locked on creation.
-        channel = await ctx.guild.create_text_channel(canon[0] + c[0], category=category,
+        channel = await ctx.guild.create_text_channel(canon + c[0], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: r})
         c_dat[channel.name] = channel.id
 
         # OOC Channel is open to all on creation.
-        channel = await ctx.guild.create_text_channel(canon[0] + c[1], category=category,
+        channel = await ctx.guild.create_text_channel(canon + c[1], category=category,
                                                       overwrites={role[0]: rw, role[1]: rw, role[2]: rw})
         c_dat[channel.name] = channel.id
 
         # Command Room is open only to players and the gm.
-        channel = await ctx.guild.create_text_channel(canon[0] + c[2], category=category,
+        channel = await ctx.guild.create_text_channel(canon + c[2], category=category,
                                                       overwrites={role[0]: n, role[1]: rw, role[2]: rw})
         c_dat[channel.name] = channel.id
 
         # Rules is for posting that which people should follow that the bot doesn't enforce.
-        channel = await ctx.guild.create_text_channel(canon[0] + c[3], category=category,
+        channel = await ctx.guild.create_text_channel(canon + c[3], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: rw})
         c_dat[channel.name] = channel.id
 
         # Meta is for viewing the meta-rules of the canon only. The GM only affects these indirectly.
-        channel = await ctx.guild.create_text_channel(canon[0] + c[4], category=category,
+        channel = await ctx.guild.create_text_channel(canon + c[4], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: r})
         c_dat[channel.name] = channel.id
 
         # GM Notes is for the gm's eyes only.
-        channel = await ctx.guild.create_text_channel(canon[0] + c[5], category=category,
+        channel = await ctx.guild.create_text_channel(canon + c[5], category=category,
                                                       overwrites={role[0]: n, role[1]: n, role[2]: rw})
         c_dat[channel.name] = channel.id
 
@@ -373,43 +376,45 @@ async def delete_canon(ctx):
     # Collect all players in canon.
     players = list()
 
+    # Prepare categories.
+    yes, no = 0, 0
+
     if not get_canon(ctx):
         return st.ERR_CANON_NONEXIST
 
     for mem in ctx.guild.members:
         user = get_user_type(mem, ctx.channel)
-        if user == UserType.GM.value or user == UserType.PLAYER.value:
+        if user == UserType.PLAYER.value:
             players.append(mem)
-
-    # Prepare categories.
-    yes, no = 0, 0
-
-    # Notify users.
-    async_results = dict()
-
-    for mem in players:
-        if get_user_type(mem, ctx.channel) == UserType.PLAYER:
-            await t(mem.dm_channel, st.ASK_IF_DELETE)
-            pool = ThreadPool()
-            async_results[mem] = pool.apply_async(wait_for_affirmation, (ctx, mem, mem.dm_channel))
-        else:
+        if user == UserType.GM.value:
             yes += 1
 
+    # Notify users.
+    affirmations, pool = list(), ThreadPool()
+
+    for mem in players:
+        if not mem.dm_channel:
+            await mem.create_dm()
+        await t(mem.dm_channel, st.ASK_IF_DELETE)
+        affirmations.append(asyncio.ensure_future(wait_for_affirmation(ctx, mem, mem.dm_channel)))
+
     # Process results...
-    accounted_for, queued = list(), list()
-    majority = math.ceil(len(players) / 2)
+    majority = math.ceil((len(players) + yes) / 2)
 
     while yes < majority and no < majority:
-        for mem in players:
-            if async_results[mem].get() in alias.AFFIRM:
+        done, affirmations = await tasks.wait(affirmations, return_when=asyncio.FIRST_COMPLETED)
+
+        print(done)
+        print(affirmations)
+
+        for d in done:
+            if d.result().lower() in alias.AFFIRM:
                 yes += 1
-                queued.append(mem)
-            elif async_results[mem].get() in alias.DENY:
+            elif d.result().lower() in alias.DENY:
                 no += 1
-                queued.append(mem)
-        for v in queued:
-            accounted_for.append(v)
-            del players[v]
+
+        print(yes)
+        print(no)
 
     if majority <= yes:
         # Prepare the directory we're going to move.
@@ -421,7 +426,9 @@ async def delete_canon(ctx):
         # Delete categories and roles in list.
         meta_dir = canon_dir + "\\" \
                    + st.META_FN + "\\" \
-                   + str(st.IDS_FN)
+                   + st.IDS_FN
+
+        guild_name = ctx.guild.get_channel(ctx.channel.category_id).name
 
         with open(meta_dir, "r") as fout:
             ids_json = json.load(fout)
@@ -443,7 +450,7 @@ async def delete_canon(ctx):
                    + str(ctx.guild.id) + "\\" \
                    + st.CANONS_FN + "\\" \
                    + st.ARCHIVES_FN + "\\" \
-                   + ctx.guild.get_channel(ctx.channel.category_id).name
+                   + guild_name
         os.rename(canon_dir, arch_dir)
 
     elif no >= majority and yes >= majority or yes < majority and no < majority:
@@ -611,17 +618,38 @@ async def f_strip(ctx, command_info, array, expected_vars, log_op='<='):
 # Utility #
 
 
-def init_perms(ctx, in_canon, perms):
+def check_perms(ctx, command=""):
     """Provides information about command relative to the member calling the command."""
-    if get_canon() and in_canon:
-        # TODO: Check if on exception list.
-        # TODO: Check role of player.
-        # TODO: Return role id or error message.
-        pass
-    elif in_canon:
-        return "DEBUG: Not in canon when it should be."
-    else:
-        return None
+    # Collect the command name.
+    command = command if command else ctx.command.name
+
+    if get_canon(ctx) and val.perms[command]:
+        # Check role of player against those allowed to call command.
+        can_call = get_user_type(ctx.message.author, ctx.channel) in val.perms[command]
+
+        # Check if on exception list.
+        meta_dir = "model\\" \
+                   + str(ctx.guild.id) + "\\" \
+                   + st.CANONS_FN + "\\" \
+                   + str(ctx.channel.category_id) + "\\" \
+                   + st.META_FN + "\\" \
+                   + st.EXCEPTIONS_FN
+        with open(meta_dir, "r") as fout:
+            exc_json = json.load(fout)
+            can_call = can_call or (exc_json.get(command).get(ctx.message.author.id)
+                                    if exc_json.get(command) else False)
+
+        # If not allowed, then return error.
+        if not can_call:
+            return st.ERR_INSUF_PERMS
+
+    elif val.perms[command]:
+        return st.ERR_NOT_IN_CANON
+
+    elif get_canon(ctx):
+        return st.ERR_IN_CANON
+
+    return None
 
 
 def make_general_player_prefs(guild):
@@ -838,6 +866,7 @@ async def check_against_list(ctx, request_str, comparators, formatter, expected_
 async def wait_for_affirmation(ctx, author, channel):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
     affirmed = None
+    print("Inside method.")
 
     # Go until confirmation acquired.
     while not affirmed:
@@ -853,6 +882,8 @@ async def wait_for_affirmation(ctx, author, channel):
         if affirmed.lower() not in alias.AFFIRM and affirmed.lower() not in alias.DENY:
             affirmed = None
             await s(ctx, st.ERR_NOT_YES_OR_NO)
+
+    print("Exiting method.")
 
     return affirmed
 

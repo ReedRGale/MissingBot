@@ -8,15 +8,19 @@
 from discord.ext import commands
 
 
-# Values #
+# Constants #
 
 
 SUCCESS_VALUES = 4
 FAILURE_VALUES = 6
 DICE_SIZE = 10
 
-rooms = 0
+
+# Variables #
+
+
 escape_value = "~"
+perms = dict()
 
 bot = commands.Bot(command_prefix="~dd ", fetch_offline_members=True)
 

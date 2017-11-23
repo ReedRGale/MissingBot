@@ -133,7 +133,7 @@ ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one exists l
                      "worlds that don't exist. That is, I don't have it in my records."
 ERR_ONLY_ONE_GM = "Alright, let's start with just one GM. Simplifies things for now. Later you can add multiple GMs." \
                   "But for now... let's keep it simple."
-ERR_CHANNEL_NOT_IN_CANON = "This channel isn't in a canon. Try calling this command somewhere it would, y'know, _work_."
+ERR_NOT_IN_CANON = "This channel isn't in a canon. Try calling this command somewhere it would, y'know, _work_."
 ERR_INV_ARG = "Sorry, don't know that keyword "
 ERR_REPEAT_ARG = "You've already used the keyword "
 ERR_INV_FORM = "Invalid. Once more, with feeling this time."
@@ -148,6 +148,9 @@ ERR_NOT_IN_GUILD = "Okay so maybe you really like that person. But they aren't h
 ERR_VOTE_FAILED = "So... something went wrong with the vote. Like, pretty darn wrong. Like, we have more members " \
                   "voting than are in the canon kind of wrong. Let's uh... let's call the command a later time and " \
                   "see if we can't do something about that."
+ERR_INSUF_PERMS = "Nice try, but you don't have the permissions to call this."
+ERR_IN_CANON = "This command is only intended to be called outside a canon. In general, this is to avoid clutter " \
+               "in the RP itself. You dig me?"
 
 
 # Other #
