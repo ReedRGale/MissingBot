@@ -32,8 +32,8 @@ async def add_character(ctx):
 
         while player_undecided:
             rsp = await req(ctx, st.REQ_PLAYER, f_strip, expected_vars=1)
-            if rsp[0] == val.escape_value:
-                return val.escape_value
+            if rsp == get_escape(ctx):
+                return get_escape(ctx)
 
             # Convert player to member instance.
             player = return_member(rsp[0])
@@ -59,8 +59,8 @@ async def add_character(ctx):
         while input_not_recorded:
             # Ask user for each field.
             stat = await req(ctx, st.REQ_CHARACTER + field + " value:", f_none, expected_vars=1)
-            if stat[0] == val.escape_value:
-                return val.escape_value
+            if stat == get_escape(ctx):
+                return get_escape(ctx)
 
             # List of checks to make sure their input makes sense.
             if field == "NAME":
@@ -68,7 +68,7 @@ async def add_character(ctx):
                 character = get_character_json(stat[0], ctx.channel)
                 if character != {}:
                     await s(ctx, st.ERR_PLAYER_EXIST + " " + st.rand_slack())
-                    return val.escape_value
+                    return get_escape(ctx)
 
                 # Set initial fields.
                 character["PLAYER"] = author.id
@@ -145,8 +145,8 @@ async def perform_skill_roll(ctx):
     """Performs a basic skill roll."""
     # Request roll purpose.
     purpose = await req(ctx, st.REQ_ROLL_PURPOSE, f_none, expected_vars=1)
-    if purpose[0] == val.escape_value:
-        return val.escape_value
+    if purpose == get_escape(ctx):
+        return get_escape(ctx)
 
     # Find the related character.
     character = await req(ctx, st.REQ_ACTIVE_CHARACTER, f_none, expected_vars=1)
@@ -154,13 +154,13 @@ async def perform_skill_roll(ctx):
 
     # Request stats for roll.
     stats = await check_against_alias(ctx, st.REQ_STATS, alias.STATS_ALIASES, f_alpha, expected_vars=2)
-    if stats[0] == val.escape_value:
-        return val.escape_value
+    if stats == get_escape(ctx):
+        return get_escape(ctx)
 
     # Retrieve mods.
     mod = await ask_for_mods(ctx)
-    if mod[0] == val.escape_value:
-        return val.escape_value
+    if mod == get_escape(ctx):
+        return get_escape(ctx)
 
     # Allocate mod particulates to proper locations.
     mod_r, mod_v = mod[0], mod[1]  # Reasons, Values
@@ -198,8 +198,8 @@ async def new_combat(ctx):
 
     # Ask for players.
     players = req_user(ctx, st.REQ_USER_COMBAT, 2, error=st.ERR_INV_FORM)
-    if players[0] == val.escape_value:
-        return val.escape_value
+    if players == get_escape(ctx):
+        return get_escape(ctx)
 
     # Notify users.
     async_results, pool = dict(), ThreadPool(processes=len(players))
@@ -238,15 +238,15 @@ async def make_canon(ctx):
     """Makes a canon folder and files."""
     # Ask for RP name
     canon = await req(ctx, st.REQ_NEW_CANON, f_none, expected_vars=1)
-    if canon[0] == val.escape_value:
-        return val.escape_value
+    if canon == get_escape(ctx):
+        return get_escape(ctx)
 
     canon = canon[0].replace(" ", "_")
 
     # Ask for GM.
     gm = await req_user(ctx, st.REQ_USER_GM, 1, error=(st.ERR_ONLY_ONE_GM + ' ' + st.ERR_REPEAT_1), log_op="<=")
-    if gm[0] == val.escape_value:
-        return val.escape_value
+    if gm == get_escape(ctx):
+        return get_escape(ctx)
     have_gm = gm[0] == ctx.author.mention
     borked = False
 
@@ -302,7 +302,7 @@ async def make_canon(ctx):
         open(role_dir, "a").close()
         with open(role_dir, "w") as fout:
             for r in role:
-                role_type = r.name.split(" ")[1]
+                role_type = r.name.split()[1]
                 role_ids[role_type] = r.id
             json.dump(role_ids, fout, indent=1)
 
@@ -404,17 +404,11 @@ async def delete_canon(ctx):
     while yes < majority and no < majority:
         done, affirmations = await tasks.wait(affirmations, return_when=asyncio.FIRST_COMPLETED)
 
-        print(done)
-        print(affirmations)
-
         for d in done:
             if d.result().lower() in alias.AFFIRM:
                 yes += 1
             elif d.result().lower() in alias.DENY:
                 no += 1
-
-        print(yes)
-        print(no)
 
     if majority <= yes:
         # Prepare the directory we're going to move.
@@ -477,21 +471,21 @@ async def f_alpha(ctx, command_info, array, expected_vars, log_op="<="):
         improperly_formatted = False
 
         # Escape command early.
-        if command_info == val.escape_value:
+        if command_info == get_escape(ctx):
             await s(ctx, st.ESCAPE)
-            return val.escape_value
+            return get_escape(ctx)
 
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(ctx, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
-            array = formatted_rsp.content.split(',')
+            array = formatted_rsp.content.split()
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
             await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
-            array = formatted_rsp.content.split(',')
+            array = formatted_rsp.content.split()
 
         # Filter out non-alphabetic data
         for j in range(len(array)):
@@ -516,21 +510,21 @@ async def f_numer(ctx, command_info, array, expected_vars, log_op='<='):
         improperly_formatted = False
 
         # Escape command early.
-        if command_info == val.escape_value:
+        if command_info == get_escape(ctx):
             await s(ctx, st.ESCAPE)
-            return val.escape_value
+            return get_escape(ctx)
 
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(ctx, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
-            array = formatted_rsp.content.split(',')
+            array = formatted_rsp.content.split()
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
             await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
-            array = formatted_rsp.content.split(',')
+            array = formatted_rsp.content.split()
 
         # Filter out non-alphabetic data
         for j in range(len(array)):
@@ -555,9 +549,9 @@ async def f_none(ctx, command_info, array, expected_vars=1, log_op="<="):
         improperly_formatted = False
 
         # Escape command early.
-        if command_info == val.escape_value:
+        if command_info == get_escape(ctx):
             await s(ctx, st.ESCAPE)
-            return val.escape_value
+            return get_escape(ctx)
 
         single_statement = [""]
 
@@ -569,7 +563,7 @@ async def f_none(ctx, command_info, array, expected_vars=1, log_op="<="):
             improperly_formatted = True
             await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
-            array = formatted_rsp.content.split(',')
+            array = formatted_rsp.content.split()
         else:
             single_statement = array
 
@@ -592,21 +586,21 @@ async def f_strip(ctx, command_info, array, expected_vars, log_op='<='):
         improperly_formatted = False
 
         # Escape command early.
-        if command_info == val.escape_value:
+        if command_info == get_escape(ctx):
             await s(ctx, st.ESCAPE)
-            return val.escape_value
+            return get_escape(ctx)
 
         # Check to make sure they didn't try to screw things up.
         if log_op == "<=" and len(array) > expected_vars:
             improperly_formatted = True
             await s(ctx, st.ERR_EXTRA_ARGS + str(expected_vars) + " or less. " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
-            array = formatted_rsp.content.split(',')
+            array = formatted_rsp.content.split()
         elif log_op == ">=" and len(array) < expected_vars:
             improperly_formatted = True
             await s(ctx, st.ERR_NOT_ENOUGH_ARGS + str(expected_vars) + ". Capiche? " + st.ERR_REPEAT_1)
             formatted_rsp = await val.bot.wait_for("message", check=check)
-            array = formatted_rsp.content.split(',')
+            array = formatted_rsp.content.split()
 
         # Filter out non-alphabetic data
         for j in range(len(array)):
@@ -655,7 +649,10 @@ def check_perms(ctx, command=""):
 def make_general_player_prefs(guild):
     """Initializes the player prefs if they don't exist."""
     # Make folder and initial docs if they don't exist.
-    pref_dir = "model\\" + str(guild.id) + "\\general\\" + st.PLAYER_PREFS_FN
+    pref_dir = "model\\" \
+               + str(guild.id) + "\\" \
+               + st.GENERAL_FN + "\\" \
+               + st.PLAYER_PREFS_FN
     if not os.path.exists(pref_dir):
         os.makedirs(pref_dir)
 
@@ -747,15 +744,15 @@ async def ask_for_mods(ctx):
 
     # Ask for confirmation on modifiers.
     confirm = await check_against_alias(ctx, st.ASK_IF_MODS, alias.CONFIRM_ALIASES, f_alpha, expected_vars=1)
-    if confirm[0] == val.escape_value:
-        return val.escape_value
+    if confirm == get_escape(ctx):
+        return get_escape(ctx)
 
     # Check confirm status.
     while confirm[0].lower() in alias.AFFIRM:
         # Request mod reason.
         reason = await req(ctx, st.REQ_MOD_REASON, f_none, expected_vars=1)
-        if reason[0] == val.escape_value:
-            return val.escape_value
+        if reason == get_escape(ctx):
+            return get_escape(ctx)
         mod_r.append(reason[0])
 
         no_int = True  # No proper input yet given.
@@ -763,8 +760,8 @@ async def ask_for_mods(ctx):
         while no_int:
             # Request mod amount.
             amount = await req(ctx, st.REQ_MOD_AMOUNT, f_numer, expected_vars=1)
-            if amount[0] == val.escape_value:
-                return val.escape_value
+            if amount == get_escape(ctx):
+                return get_escape(ctx)
             no_int = not calc.is_int(amount[0])
             if no_int:
                 await s(ctx, st.ERR_INV_FORM)
@@ -774,8 +771,8 @@ async def ask_for_mods(ctx):
         # Ask if more mods.
         confirm = await check_against_alias(ctx, st.ASK_IF_MORE_MODS, alias.CONFIRM_ALIASES,
                                             f_alpha, expected_vars=1)
-        if confirm[0] == val.escape_value:
-            return val.escape_value
+        if confirm == get_escape(ctx):
+            return get_escape(ctx)
 
     return [mod_r, mod_v]
 
@@ -785,8 +782,8 @@ async def check_against_alias(ctx, request_str, aliases, formatter, expected_var
     # Prime the pump.
     i, used = 0, []
     values = await req(ctx, request_str, formatter, expected_vars)
-    if values[0] == val.escape_value:
-        return val.escape_value
+    if values == get_escape(ctx):
+        return get_escape(ctx)
 
     # For each possible alias, check that the names the user input are valid.
     while i < len(values):
@@ -803,8 +800,8 @@ async def check_against_alias(ctx, request_str, aliases, formatter, expected_var
                     # Reprime the pump.
                     i, used = 0, []
                     values = await req(ctx, st.ERR_REPEAT_1, formatter, expected_vars)
-                    if values[0] == val.escape_value:
-                        return val.escape_value
+                    if values == get_escape(ctx):
+                        return get_escape(ctx)
                     break
             if not invalid:
                 break
@@ -814,8 +811,8 @@ async def check_against_alias(ctx, request_str, aliases, formatter, expected_var
             # Reprime the pump.
             i, used = 0, []
             values = await req(ctx, st.ERR_REPEAT_1, formatter, expected_vars)
-            if values[0] == val.escape_value:
-                return val.escape_value
+            if values == get_escape(ctx):
+                return get_escape(ctx)
 
         else:  # Otherwise, alias found; continue.
             i += 1
@@ -829,8 +826,8 @@ async def check_against_list(ctx, request_str, comparators, formatter, expected_
     # Prime the pump.
     i, used = 0, []
     values = await req(ctx, request_str, formatter, expected_vars)
-    if values[0] == val.escape_value:
-        return val.escape_value
+    if values == get_escape(ctx):
+        return get_escape(ctx)
 
     # For each possible value, check that the names the user input are valid.
     while i < len(values):
@@ -848,8 +845,8 @@ async def check_against_list(ctx, request_str, comparators, formatter, expected_
                 # Reprime the pump.
                 i, used = 0, []
                 values = await req(ctx, request_str, formatter, expected_vars)
-                if values[0] == val.escape_value:
-                    return val.escape_value
+                if values == get_escape(ctx):
+                    return get_escape(ctx)
                 break
         if invalid:  # Alias unfound.
             # Inform the user that their argument is invalid.
@@ -857,8 +854,8 @@ async def check_against_list(ctx, request_str, comparators, formatter, expected_
             # Reprime the pump.
             i, used = 0, []
             values = await req(ctx, request_str, formatter, expected_vars)
-            if values[0] == val.escape_value:
-                return val.escape_value
+            if values == get_escape(ctx):
+                return get_escape(ctx)
 
     return values
 
@@ -866,7 +863,6 @@ async def check_against_list(ctx, request_str, comparators, formatter, expected_
 async def wait_for_affirmation(ctx, author, channel):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
     affirmed = None
-    print("Inside method.")
 
     # Go until confirmation acquired.
     while not affirmed:
@@ -882,8 +878,6 @@ async def wait_for_affirmation(ctx, author, channel):
         if affirmed.lower() not in alias.AFFIRM and affirmed.lower() not in alias.DENY:
             affirmed = None
             await s(ctx, st.ERR_NOT_YES_OR_NO)
-
-    print("Exiting method.")
 
     return affirmed
 
@@ -901,10 +895,10 @@ async def req(ctx, req_str, formatter, expected_vars, log_op="<="):
 
     # Wait for response.
     rsp = await val.bot.wait_for("message", check=check)
-    values = rsp.content.split(',')
+    values = rsp.content.split()
     values = await formatter(ctx, rsp.content, values, expected_vars, log_op)
-    if values[0] == val.escape_value:
-        return val.escape_value
+    if values == get_escape(ctx):
+        return get_escape(ctx)
     return values
 
 
@@ -913,8 +907,8 @@ async def req_user(ctx, request_str, expected_vars, log_op=">=", error=st.ERR_IN
     mems = [""]  # Dummy data to prime the pump.
     while not members_exist(ctx, mems):
         mems = await req(ctx, request_str, f_none, expected_vars=expected_vars, log_op=log_op)
-        if mems[0] == val.escape_value:
-            return val.escape_value
+        if mems == get_escape(ctx):
+            return get_escape(ctx)
         elif not members_exist(ctx, mems):
             await s(ctx, error)
     return mems
@@ -928,6 +922,20 @@ def members_exist(ctx, m_list):
             all_exist = False
             break
     return all_exist
+
+
+def get_escape(ctx):
+    """Get the escape value of a member."""
+    pref_dir = "model\\" \
+               + str(ctx.guild.id) + "\\" \
+               + st.GENERAL_FN + "\\" \
+               + st.PLAYER_PREFS_FN + "\\" \
+               + str(ctx.author.id) + ".json"
+
+    with open(pref_dir, "r") as fout:
+        pref_json = json.load(fout)
+
+    return pref_json["escape"]
 
 
 def get_app_token():

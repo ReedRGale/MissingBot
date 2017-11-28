@@ -112,7 +112,7 @@ async def new_canon(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
         status = await util.make_canon(ctx.message)
-        if status == val.escape_value:
+        if status == util.get_escape(ctx):
             return
         return await ctx.send(status + " " + st.rand_slack())
     return await ctx.send(overruled + " " + st.rand_slack())
@@ -124,7 +124,7 @@ async def delete_canon(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
         status = await util.delete_canon(ctx.message)
-        if status == val.escape_value:
+        if status == util.get_escape(ctx):
             return
         elif not status:
             return
@@ -137,7 +137,7 @@ async def new_character(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
         e_nr = await util.add_character(ctx.message, ctx.message.author, ctx.message.channel)
-        if e_nr == val.escape_value:
+        if e_nr == util.get_escape(ctx):
             return
         return await ctx.send(st.SAVED)
     return await ctx.send(overruled + " " + st.rand_slack())
@@ -157,7 +157,7 @@ async def skill_roll(ctx):
     if not overruled:
         # Begin the skill roll.
         final_string = await util.perform_skill_roll(ctx.message)
-        if final_string == val.escape_value:
+        if final_string == util.get_escape(ctx):
             return
         return await ctx.send(final_string)
     return await ctx.send(overruled + " " + st.rand_slack())
@@ -168,8 +168,8 @@ async def new_combat(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
         e_rt = await util.new_combat(ctx.message)
-        if e_rt == val.escape_value:
-            return ctx.send(st.ESCAPE)
+        if e_rt == util.get_escape(ctx):
+            return
         return await ctx.send(st.INF_DONE + " " + st.rand_slack())
     return await ctx.send(overruled + " " + st.rand_slack())
 

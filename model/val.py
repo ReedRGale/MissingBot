@@ -18,10 +18,7 @@ DICE_SIZE = 10
 
 # Variables #
 
-
-escape_value = "~"
 perms = dict()
-
 bot = commands.Bot(command_prefix="~dd ", fetch_offline_members=True)
 
 

@@ -86,7 +86,7 @@ DB_HELP = "If I set this up properly, how did you ever get here...? Are you on m
 # Request Messages #
 
 
-REQ_STATS = "Which stats are related to this roll? Separate with commas. \n"
+REQ_STATS = "Which stats are related to this roll? Separate with spaces. \n"
 REQ_ACTIVE_CHARACTER = "Which character is rolling? \n"
 REQ_CHARACTER = "Please provide a "
 REQ_MOD_REASON = "What's one factor affecting this roll?"
@@ -95,7 +95,7 @@ REQ_MOD_AMOUNT = "By how many dice should this affect the roll? (i.e. -3, 4, 1, 
 REQ_CANON = "Alright... so what canon are we working with today?"
 REQ_NEW_CANON = "So, what'cha wanna call this new story-world?"
 REQ_USER_COMBAT = "Now, which users are taking part in this 'glorious brawl?' You know the drill, " \
-                  "list them all with at tags (@) and separate them with commas. Ah, do note that the GM " \
+                  "list them all with at tags (@) and separate them with spaces. Ah, do note that the GM " \
                   "is automatically included. No need to worry there. \n\n " \
                   "Ex: @DJ Dante , @ReedRGale"
 REQ_PLAYER = "So, which player is gonna to be using this character? Remember to use their taggable name. You know, " \
@@ -131,7 +131,7 @@ ERR_PLAYER_EXIST = "Yo. So... uh... don't try to like... take this character's i
 ERR_PLAYER_NONEXIST = "Yo. So... uh... I don't know how to put this nicely. But... that player doesn't... exist? Yeah."
 ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one exists less than the other " \
                      "worlds that don't exist. That is, I don't have it in my records."
-ERR_ONLY_ONE_GM = "Alright, let's start with just one GM. Simplifies things for now. Later you can add multiple GMs." \
+ERR_ONLY_ONE_GM = "Alright, let's start with just one GM. Simplifies things for now. Later you can add multiple GMs. " \
                   "But for now... let's keep it simple."
 ERR_NOT_IN_CANON = "This channel isn't in a canon. Try calling this command somewhere it would, y'know, _work_."
 ERR_INV_ARG = "Sorry, don't know that keyword "
@@ -157,6 +157,7 @@ ERR_IN_CANON = "This command is only intended to be called outside a canon. In g
 
 
 ARCHIVES_FN = "_archives"
+GENERAL_FN = "general"
 CHARACTERS_FN = "characters"
 META_FN = "meta"
 LOGS_FN = "logs"
