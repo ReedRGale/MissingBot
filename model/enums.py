@@ -39,3 +39,8 @@ class UserType(Enum):
 
     def __str__(self):
         return self.name
+
+
+class TidyMode(Enum):
+    STANDARD = 0
+    WARNING = 1

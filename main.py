@@ -102,6 +102,7 @@ async def on_ready():
     val.perms["newcombat"] = (UserType.GM.value, UserType.PLAYER.value)
     val.perms["forecast"] = (UserType.GM.value, UserType.PLAYER.value, UserType.OBSERVER.value)
     val.perms["help"] = ()
+    val.perms["setescape"] = ()
 
 # Commands #
 
@@ -139,7 +140,7 @@ async def new_character(ctx):
         e_nr = await util.add_character(ctx.message, ctx.message.author, ctx.message.channel)
         if e_nr == util.get_escape(ctx):
             return
-        return await ctx.send(st.SAVED)
+        return await ctx.send(st.SAVED + " " + st.rand_slack())
     return await ctx.send(overruled + " " + st.rand_slack())
 
 
@@ -148,6 +149,18 @@ async def list_characters(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
         return await ctx.send(util.get_characters(ctx.message))
+    return await ctx.send(overruled + " " + st.rand_slack())
+
+
+@val.bot.command(name="setescape", help=st.LR_HELP, brief=st.LR_BRIEF)
+async def set_escape(ctx):
+    overruled = util.check_perms(ctx)
+    if not overruled:
+        prev_escape = util.get_escape(ctx)
+        escape = await util.escape_setter(ctx)
+        if escape == prev_escape:
+            return
+        return await ctx.send(st.INF_ESCAPE_SET.format(escape) + " " + st.rand_slack())
     return await ctx.send(overruled + " " + st.rand_slack())
 
 

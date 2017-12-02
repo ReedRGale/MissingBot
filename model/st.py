@@ -23,6 +23,7 @@ INF_DENIED_GM = "They made the smart choice and chose not to be GM. Call me agai
 INF_DENIED_DELETE = "Seems people still like this world. At the very least, the vote failed. The show goes on, for now."
 INF_DELETE_CHANNEL = "I zorked this because I was told to by the GM and the players voted for it."
 INF_DELETE_ROLE = "I blanged this because I was told to by the GM and the players agreed."
+INF_ESCAPE_SET = "Your new escape value is {}. Use it wisely."
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
@@ -102,6 +103,9 @@ REQ_PLAYER = "So, which player is gonna to be using this character? Remember to 
              "the one with the '@' in it?"
 REQ_USER_GM = "Okay, so who's gonna be running this show? If it's you, tag yourself. Otherwise, tag someone else."
 REQ_REL_CANON = "Alright, so what canon is your poison today?"
+REQ_NEW_ESCAPE = "So, tell me what your new escape value is gonna be. Just try not to make it something you might" \
+                 "use normally like your character's name, because whenever I see it, I'm gonna blindly end the " \
+                 "command, 'kay?"
 
 
 # Confirmations #

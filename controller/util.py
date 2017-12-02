@@ -452,6 +452,18 @@ async def delete_canon(ctx):
     else:
         return st.INF_DENIED_DELETE
 
+
+async def escape_setter(ctx):
+    """A function that encapsulates everything regarding changing a personal escape value."""
+    # Request new escape value.
+    escape = await req(ctx, st.REQ_NEW_ESCAPE, f_none, expected_vars=1)
+    if escape == get_escape(ctx):
+        return get_escape(ctx)
+
+    set_escape(ctx, escape[0])
+    return escape[0]
+
+
 # Formatters #
 
 
@@ -932,11 +944,24 @@ def get_escape(ctx):
                + st.PLAYER_PREFS_FN + "\\" \
                + str(ctx.author.id) + ".json"
 
-    with open(pref_dir, "r") as fout:
-        pref_json = json.load(fout)
+    with open(pref_dir, "r") as fin:
+        pref_json = json.load(fin)
 
     return pref_json["escape"]
 
+
+def set_escape(ctx, escape):
+    """Set the escape value of a member."""
+    pref_dir = "model\\" \
+               + str(ctx.guild.id) + "\\" \
+               + st.GENERAL_FN + "\\" \
+               + st.PLAYER_PREFS_FN + "\\" \
+               + str(ctx.author.id) + ".json"
+
+    escape_json = {"escape": escape}
+
+    with open(pref_dir, "w") as fout:
+        json.dump(escape_json, fout, indent=1)
 
 def get_app_token():
     with open('token.txt', 'r') as token:
