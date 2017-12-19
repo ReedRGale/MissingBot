@@ -155,6 +155,11 @@ ERR_VOTE_FAILED = "So... something went wrong with the vote. Like, pretty darn w
 ERR_INSUF_PERMS = "Nice try, but you don't have the permissions to call this."
 ERR_IN_CANON = "This command is only intended to be called outside a canon. In general, this is to avoid clutter " \
                "in the RP itself. You dig me?"
+ERR_INVALID_CONTENT = "Mr. Programmer, somehow you've failed to give me a string or an Embed to show our lovely " \
+                      "users. Tut tut. Get on that."
+ERR_INVALID_TIDYMODE = "Mr. Programmer, it looks like you gave me a TidyMode I don't know how to work with. " \
+                       "And now, some user is probably going 'huh? what's that?' You only have yourself to blame " \
+                       "now, Mr. Programmer. After all, you wrote this error code."
 
 
 # Other #

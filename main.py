@@ -6,10 +6,12 @@
 
 # Import #
 
+import random
 import os
 import json
 from model import st, val
-from model.enums import UserType
+from model.enums import UserType, TidyMode
+from view.TidyMessage import TidyMessage
 from controller import util
 
 
@@ -93,7 +95,16 @@ async def on_ready():
     print(val.bot.user.id)
     print('------')
 
-    # On Start, Load in Permissions for Users
+    # Prepare the TidyMessage metadata.
+    TidyMessage.set_t_imgs(TidyMode.STANDARD.value, val.A_URLS_STANDARD)
+    TidyMessage.set_t_imgs(TidyMode.WARNING.value, val.T_URLS_WARNING)
+    TidyMessage.set_a_imgs(TidyMode.STANDARD.value, val.A_URLS_STANDARD)
+    TidyMessage.set_a_imgs(TidyMode.WARNING.value, val.A_URLS_WARNING)
+    TidyMessage.set_color(TidyMode.STANDARD.value, 0xF2D40F)
+    TidyMessage.set_color(TidyMode.WARNING.value, 0xc99e3a)
+    TidyMessage.set_url(val.GITHUB_URL)
+
+    # Load in Permissions for Users
     val.perms["newcanon"] = ()
     val.perms["deletecanon"] = (UserType.GM.value,)
     val.perms["newcharacter"] = (UserType.GM.value,)
@@ -103,6 +114,7 @@ async def on_ready():
     val.perms["forecast"] = (UserType.GM.value, UserType.PLAYER.value, UserType.OBSERVER.value)
     val.perms["help"] = ()
     val.perms["setescape"] = ()
+    val.perms["debug"] = ()
 
 # Commands #
 
@@ -224,7 +236,10 @@ async def debug(ctx):
     # The bot can only proceed linearly for each callback performed.
     # Multithreading can circumvent the linear nature of the bot's callbacks.
     # With some serious finagling, you can link and create a channel and a category.
-    await ctx.send(st.INF_NAUGHT + " " + st.rand_slack())
+    tm = await TidyMessage.build(ctx, util.get_escape(ctx), "Testing backend changes, type something.", req=True)
+    tm = await tm.rebuild("Look ma, just one arg now!! Anyway, testing chains so go ahead and say something again.",
+                          req=True)
+    return await tm.rebuild("Poof, it's gone! Alright, easy. Chains work. Gonna have a few more things to test later.")
 
 
 # Code #

@@ -963,6 +963,7 @@ def set_escape(ctx, escape):
     with open(pref_dir, "w") as fout:
         json.dump(escape_json, fout, indent=1)
 
+
 def get_app_token():
     with open('token.txt', 'r') as token:
         token = token.read()
