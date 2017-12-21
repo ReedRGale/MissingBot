@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import random
+import shlex
 from model import st
 from model.enums import TidyMode
 
@@ -19,7 +20,6 @@ class TidyMessage:
         self.ctx = kwargs.get("ctx")
         self.mode = kwargs.get("mode")
         self.escape = kwargs.get("escape")
-        self.repeat = kwargs.get("repeat")
         self.title = kwargs.get("title")
 
         # Information generated in rebuild()
@@ -37,7 +37,6 @@ class TidyMessage:
         # Make the TM instance.
         tm = TidyMessage(ctx=ctx, escape=escape, prompt=ctx.message)
         tm.mode = kwargs.get("mode") if kwargs.get("mode") else TidyMode.STANDARD
-        tm.repeat = kwargs.get("repeat") if kwargs.get("repeat") else ""
         tm.title = kwargs.get("title") if kwargs.get("title") else ""
 
         # If an 'id' exists, edit that message instead of making a new message.
@@ -53,13 +52,12 @@ class TidyMessage:
             mode:       Is the TidyMode to use to grab default values for the Embed
             req:        Bool:  if we're doing a request or not (content is a the request message, in this case)
             repeat:     Repeat string for requests--if proper information isn't gleaned, repeats
-            check:      A check for requests--allows for internal string checking for important data"""
+            checks:     A set of checks for requests--allows for internal string checking for important data"""
 
         # Initialize the new TidyMessage as a copy of the current one.
         tm = TidyMessage(ctx=self.ctx,
                          mode=self.mode,
                          escape=self.escape,
-                         repeat=self.repeat,
                          title=self.title,
                          prompt=self.prompt,
                          message=self.message,
@@ -77,7 +75,7 @@ class TidyMessage:
         elif isinstance(content, str):
             tm.embed = await tm._convert(content, tm.mode)
         else:
-            return await tm.rebuild(st.ERR_INVALID_CONTENT, mode=TidyMode.WARNING)
+            return await tm.rebuild(st.ERR_INVALID_TM_CONTENT, mode=TidyMode.WARNING)
 
         # If we hit an error, end immediately.
         if isinstance(tm.embed, TidyMessage):
@@ -101,7 +99,7 @@ class TidyMessage:
         return tm
 
     async def _convert(self, content, mode):
-        """Generate an Embed based on the mode given."""
+        """Convert the 'content' into an Embed based on the mode given."""
 
         # Change mode to a hashable type.
         mode = mode.value
@@ -127,16 +125,11 @@ class TidyMessage:
 
     async def _req(self, content, tm, **kwargs):
         """Ask a request for the user and return that request as a list of inputs or return an escape character."""
-        again, unchecked = False, True
-
-        # If a different repeat message is desired, swap the messages.
-        if kwargs.get("repeat") != tm.repeat:
-            tm.repeat = kwargs.get("repeat")
+        again, unchecked, repeat = False, True, ""
 
         while unchecked:
             # Ask the request.
-            content = content if not again else tm.repeat + content
-            tm = await tm.rebuild(content)
+            tm = await tm.rebuild(content if not again else repeat + " " + content)
 
             # Define check
             a = self.prompt.author
@@ -154,7 +147,16 @@ class TidyMessage:
             tm.prompt = rsp
 
             # Check the information.
-            unchecked = kwargs.get("check")(rsp.content) if kwargs.get("check") else False
+            req_checks = kwargs.get("checks")
+            if req_checks:
+                for c in req_checks:
+                    c_val = c(*shlex.split(rsp.content))
+                    unchecked = False
+                    if isinstance(c_val, str):
+                        unchecked, repeat, again = c_val, c_val, True
+                        break
+            else:
+                unchecked = False
 
         return tm
 

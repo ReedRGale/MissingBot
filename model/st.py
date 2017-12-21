@@ -139,7 +139,7 @@ ERR_ONLY_ONE_GM = "Alright, let's start with just one GM. Simplifies things for 
                   "But for now... let's keep it simple."
 ERR_NOT_IN_CANON = "This channel isn't in a canon. Try calling this command somewhere it would, y'know, _work_."
 ERR_INV_ARG = "Sorry, don't know that keyword "
-ERR_REPEAT_ARG = "You've already used the keyword "
+ERR_DUP_ARG = "So it looks like you've used the same arg multiple times for some reason. Could you, like, not?"
 ERR_INV_FORM = "Invalid. Once more, with feeling this time."
 ERR_STAT_LT_ZERO = "A stat can't be less than 0. And, let's be fair, do you really want it to be?"
 ERR_STAT_GT_FIFT = "A stat can't be greater than 15. And that's already obnoxiously high as it is."
@@ -155,11 +155,23 @@ ERR_VOTE_FAILED = "So... something went wrong with the vote. Like, pretty darn w
 ERR_INSUF_PERMS = "Nice try, but you don't have the permissions to call this."
 ERR_IN_CANON = "This command is only intended to be called outside a canon. In general, this is to avoid clutter " \
                "in the RP itself. You dig me?"
-ERR_INVALID_CONTENT = "Mr. Programmer, somehow you've failed to give me a string or an Embed to show our lovely " \
-                      "users. Tut tut. Get on that."
+ERR_INV_USER_CONTENT_I = "Hey so, it looks like your input is, like, invalid in some way. Specifically, you're " \
+                         "using one of these:  {}. If you could stop doing that, it would make your " \
+                         "command a lot easier to process, kthx."
+ERR_INV_USER_CONTENT_V = "Alright so, gonna let you in on a little secret. I'm looking for specific words. " \
+                         "This might get lengthy, but I'm looking for... \n\n{}. \n\nCould ya use one of those? " \
+                         "Pretty please?"
+ERR_INVALID_TM_CONTENT = "Mr. Programmer, somehow you've failed to give me a string or an Embed to show our lovely " \
+                         "users. Tut tut. Get on that."
 ERR_INVALID_TIDYMODE = "Mr. Programmer, it looks like you gave me a TidyMode I don't know how to work with. " \
                        "And now, some user is probably going 'huh? what's that?' You only have yourself to blame " \
                        "now, Mr. Programmer. After all, you wrote this error code."
+ERR_TOO_FEW_ARGS = "Soooo, I'm looking for a few more arguments than that. Specifically, I'm looking for {} {}."
+ERR_TOO_MANY_ARGS = "Bit overkill there. I'm looking for a little less than that. Specifically, {} {}."
+ERR_INEXACT_ARGS = "Noooot exactly. I'm looking for {} arg here. Can you do that?"
+ERR_REPEAT_VAL = "So, you don't repeat variables here. Please. You know the one I'm talking about. " \
+                 "'{}.' Don't do that."
+ERR_NOT_IN_ALIAS = "I don't know the word {} in this context. Maybe try again?"
 
 
 # Other #

@@ -464,6 +464,85 @@ async def escape_setter(ctx):
     return escape[0]
 
 
+# Checks #
+
+
+def check_dups(*args):
+    return True if len(args) == len(set(args)) else st.ERR_DUP_ARG
+
+
+def check_invalid_f(c_set):
+    """A check-factory that makes a check that looks to see if there
+    isn't any of a set of characters inside each arg."""
+    def check(*args):
+        for a in args:
+            if contains_any(a, c_set):
+                return st.ERR_INV_USER_CONTENT_I.format(c_set)
+        return True
+    return check
+
+
+def check_valid_f(c_set):
+    """A check-factory that makes a check that looks to see if there's
+    any of a set of characters inside each arg."""
+    def check(*args):
+        for a in args:
+            if not is_any(a, c_set):
+                return st.ERR_INV_USER_CONTENT_V.format(c_set)
+        return True
+    return check
+
+
+def check_args_f(op, num):
+    """A check-factory that makes a check that looks at the number of args relative to an operator.
+        len(args) <op> num :: Plain English: the number of args should be <op> 'num' otherwise throw an error."""
+    if op == ">":
+        def check(*args):
+            return True if len(args) > num else st.ERR_TOO_FEW_ARGS.format("more than", str(num))
+    elif op == ">=":
+        def check(*args):
+            return True if len(args) >= num else st.ERR_TOO_FEW_ARGS.format(str(num), "or more")
+    elif op == "<":
+        def check(*args):
+            return True if len(args) < num else st.ERR_TOO_MANY_ARGS.format("less than", str(num))
+    elif op == "<=":
+        def check(*args):
+            return True if len(args) <= num else st.ERR_TOO_MANY_ARGS.format(str(num), "or less")
+    elif op == "==":
+        def check(*args):
+            return True if len(args) == num else st.ERR_INEXACT_ARGS.format(str(num))
+    else:  # I hate myself, so fail silently and just not check the args for not inputting things properly.
+        def check(*args):
+            return True
+    return check
+
+
+def check_alias_f(aliases, no_dups=False):
+    """A check-factory that makes a check that looks to see if there's
+     any of a set of characters inside of an alias [dictionary of values]."""
+    def check(*args):
+        # Prepare a list to measure variables already used and another to count checks.
+        used, c_list, matched = list(), list(), False
+
+        # Check each alias against each argument.
+        for a in args:
+            for name in aliases:
+                for al in aliases[name]:
+                    matched = al.lower() == a.lower()
+                    print(al.lower() == a.lower())
+                    if matched and name in used and no_dups:
+                        return st.ERR_REPEAT_VAL.format(a)
+                    elif matched:
+                        used.append(name)
+                        break
+                if matched:
+                    break
+            if not matched:
+                return st.ERR_NOT_IN_ALIAS.format(a)
+        return True
+    return check
+
+
 # Formatters #
 
 
@@ -807,7 +886,7 @@ async def check_against_alias(ctx, request_str, aliases, formatter, expected_var
                     used.append(name)
                 elif a.lower() == values[i].lower() and name in used:  # Alias found & used prev.
                     # Inform the user that they've repeated an argument.
-                    await s(ctx, st.ERR_REPEAT_ARG + values[i] + "!")
+                    await s(ctx, st.ERR_DUP_ARG + values[i] + "!")
                     invalid = False
                     # Reprime the pump.
                     i, used = 0, []
@@ -852,7 +931,7 @@ async def check_against_list(ctx, request_str, comparators, formatter, expected_
                 break
             elif c.lower() == values[i].lower() and c in used:  # Value found & used prev.
                 # Inform the user that they've repeated an argument.
-                await s(ctx, st.ERR_REPEAT_ARG + values[i] + "! " + st.ERR_REPEAT_1)
+                await s(ctx, st.ERR_DUP_ARG + values[i] + "! " + st.ERR_REPEAT_1)
                 invalid = False
                 # Reprime the pump.
                 i, used = 0, []
@@ -969,6 +1048,19 @@ def get_app_token():
         token = token.read()
     return token
 
+
+def contains_any(content, chars):
+    for c in chars:
+        if c in content:
+            return True
+    return False
+
+
+def is_any(content, vals):
+    for v in vals:
+        if v.lower() == content.lower():
+            return True
+    return False
 
 # Syntactical Candy #
 

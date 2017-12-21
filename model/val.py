@@ -14,6 +14,7 @@ from discord.ext import commands
 SUCCESS_VALUES = 4
 FAILURE_VALUES = 6
 DICE_SIZE = 10
+WHITESPACE = [' ', '\n', '\t']
 
 # Links #
 

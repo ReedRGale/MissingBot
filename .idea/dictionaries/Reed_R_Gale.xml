@@ -4,6 +4,7 @@
       <w>agains</w>
       <w>borked</w>
       <w>deletecanon</w>
+      <w>dups</w>
       <w>fift</w>
       <w>formatters</w>
       <w>fout</w>
@@ -22,6 +23,7 @@
       <w>setescape</w>
       <w>skillroll</w>
       <w>unfound</w>
+      <w>vals</w>
     </words>
   </dictionary>
 </component>

@@ -9,7 +9,7 @@
 import random
 import os
 import json
-from model import st, val
+from model import st, val, alias
 from model.enums import UserType, TidyMode
 from view.TidyMessage import TidyMessage
 from controller import util
@@ -96,7 +96,7 @@ async def on_ready():
     print('------')
 
     # Prepare the TidyMessage metadata.
-    TidyMessage.set_t_imgs(TidyMode.STANDARD.value, val.A_URLS_STANDARD)
+    TidyMessage.set_t_imgs(TidyMode.STANDARD.value, val.T_URLS_STANDARD)
     TidyMessage.set_t_imgs(TidyMode.WARNING.value, val.T_URLS_WARNING)
     TidyMessage.set_a_imgs(TidyMode.STANDARD.value, val.A_URLS_STANDARD)
     TidyMessage.set_a_imgs(TidyMode.WARNING.value, val.A_URLS_WARNING)
@@ -227,7 +227,7 @@ async def help_command(ctx, *args):
 
 
 @val.bot.command(name="debug", help=st.DB_HELP, brief=st.DB_BRIEF)
-async def debug(ctx):
+async def debug(ctx, *args):
     """Command to test things."""
     # Learned:
     # You can reference members from mentions in messages by using member.mention.
@@ -236,10 +236,19 @@ async def debug(ctx):
     # The bot can only proceed linearly for each callback performed.
     # Multithreading can circumvent the linear nature of the bot's callbacks.
     # With some serious finagling, you can link and create a channel and a category.
-    tm = await TidyMessage.build(ctx, util.get_escape(ctx), "Testing backend changes, type something.", req=True)
-    tm = await tm.rebuild("Look ma, just one arg now!! Anyway, testing chains so go ahead and say something again.",
-                          req=True)
-    return await tm.rebuild("Poof, it's gone! Alright, easy. Chains work. Gonna have a few more things to test later.")
+    tm = await TidyMessage.build(ctx, util.get_escape(ctx), "Repeat check.",
+                                 req=True, checks=[util.check_dups])
+    tm = await tm.rebuild("Whitespace check.",
+                          req=True, checks=[util.check_invalid_f(val.WHITESPACE)])
+    tm = await tm.rebuild("Affirmation check.",
+                          req=True, checks=[util.check_valid_f(alias.AFFIRM)])
+    tm = await tm.rebuild("More args than 3 check.",
+                          req=True, checks=[util.check_args_f(">", 3)])
+    tm = await tm.rebuild("Confirmation check.",
+                          req=True, checks=[util.check_alias_f(alias.CONFIRM_ALIASES)])
+    tm = await tm.rebuild("Confirmation check, no repeats.",
+                          req=True, checks=[util.check_alias_f(alias.CONFIRM_ALIASES, no_dups=True)])
+    return await tm.rebuild("If you made it here, seems we passed all tests. Soooo good on that, I guess.")
 
 
 # Code #
