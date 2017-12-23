@@ -21,6 +21,7 @@ class TidyMessage:
         self.mode = kwargs.get("mode")
         self.escape = kwargs.get("escape")
         self.title = kwargs.get("title")
+        self.dest = kwargs.get("dest")
 
         # Information generated in rebuild()
         self.prompt = kwargs.get("prompt")
@@ -28,24 +29,29 @@ class TidyMessage:
         self.embed = kwargs.get("embed")
 
     @staticmethod
-    async def build(ctx, escape, content, **kwargs):
+    async def build(ctx, escape, req=True, **kwargs):
         """Make a new TidyMessage
             id:         Is the ID for a message that already exists
             ctx:        Is the context within which this TM was made
             content:    Is the content to be put into the embed
-            mode:       Is the TidyMode to use to grab default values for the Embed"""
+            mode:       Is the TidyMode to use to grab default values for the Embed (STANDARD by default)
+            dest:       Is the endpoint where messages will be sent (ctx.channel by default)"""
         # Make the TM instance.
         tm = TidyMessage(ctx=ctx, escape=escape, prompt=ctx.message)
         tm.mode = kwargs.get("mode") if kwargs.get("mode") else TidyMode.STANDARD
         tm.title = kwargs.get("title") if kwargs.get("title") else ""
+        tm.dest = kwargs.get("dest") if kwargs.get("dest") else ctx.channel
 
         # If an 'id' exists, edit that message instead of making a new message.
         tm.message = tm.ctx.get_message(kwargs.get("id")) if kwargs.get("id") else None
 
         # Generate Message, Embed, and (potentially) the prompt.
-        return await tm.rebuild(content, **kwargs)
+        if kwargs.get("content"):
+            return await tm.rebuild(kwargs.get("content"), req, **kwargs)
+        else:
+            return tm
 
-    async def rebuild(self, content, **kwargs):
+    async def rebuild(self, content, req=True, **kwargs):
         """Modifies an existing TidyMessage
             prompt:     Is the message or reaction which invoked this TM
             content:    Is the content to be put into the embed
@@ -53,12 +59,12 @@ class TidyMessage:
             req:        Bool:  if we're doing a request or not (content is a the request message, in this case)
             repeat:     Repeat string for requests--if proper information isn't gleaned, repeats
             checks:     A set of checks for requests--allows for internal string checking for important data"""
-
         # Initialize the new TidyMessage as a copy of the current one.
         tm = TidyMessage(ctx=self.ctx,
                          mode=self.mode,
                          escape=self.escape,
                          title=self.title,
+                         dest=self.dest,
                          prompt=self.prompt,
                          message=self.message,
                          embed=self.embed)
@@ -75,7 +81,7 @@ class TidyMessage:
         elif isinstance(content, str):
             tm.embed = await tm._convert(content, tm.mode)
         else:
-            return await tm.rebuild(st.ERR_INVALID_TM_CONTENT, mode=TidyMode.WARNING)
+            return await tm.rebuild(st.ERR_INVALID_TM_CONTENT, req=False, mode=TidyMode.WARNING)
 
         # If we hit an error, end immediately.
         if isinstance(tm.embed, TidyMessage):
@@ -83,18 +89,19 @@ class TidyMessage:
 
         # Delete the user command.
         try:
-            await self.prompt.delete()
+            if not isinstance(self.source, discord.DMChannel):
+                await self.prompt.delete()
         except discord.errors.NotFound:
             pass  # If it's not there to be deleted we already did our job.
 
-        if kwargs.get("req"):  # If a request, ask it.
+        if req:  # If a request, ask it.
             tm = await tm._req(content, tm, **kwargs)
             if tm == self.escape:
                 return self.escape
         else:  # Otherwise, send the message.
-            if isinstance(tm.message, discord.Message):
+            if isinstance(tm.message, discord.Message) and not isinstance(self.source, discord.DMChannel):
                 await tm.message.delete()
-            tm.message = await tm.ctx.channel.send(embed=tm.embed)
+            tm.message = await tm.dest.send(embed=tm.embed)
 
         return tm
 
@@ -111,7 +118,7 @@ class TidyMessage:
 
         # Check to make sure this will work.
         if not t_url or not a_url or not color:
-            return await TidyMessage.rebuild(st.ERR_INVALID_TIDYMODE, mode=TidyMode.WARNING)
+            return await TidyMessage.rebuild(st.ERR_INVALID_TIDYMODE, req=False, mode=TidyMode.WARNING)
 
         # Make and return the embed.
         emb = discord.Embed(title=self.title,
@@ -129,7 +136,7 @@ class TidyMessage:
 
         while unchecked:
             # Ask the request.
-            tm = await tm.rebuild(content if not again else repeat + " " + content)
+            tm = await tm.rebuild(content if not again else repeat + " " + content, req=False)
 
             # Define check
             a = self.prompt.author

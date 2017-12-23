@@ -24,6 +24,7 @@ val.bot.remove_command("help")
 
 # Events #
 
+
 @val.bot.event
 async def on_member_join(mem):
     # When player joins, update the player_prefs and update them.
@@ -116,7 +117,20 @@ async def on_ready():
     val.perms["setescape"] = ()
     val.perms["debug"] = ()
 
+
 # Commands #
+
+
+@val.bot.command(name="setescape", help=st.SE_HELP, brief=st.SE_BRIEF)
+async def set_escape(ctx):
+    overruled = util.check_perms(ctx)
+    if not overruled:
+        prev_escape = util.get_escape(ctx)
+        escape = await util.escape_setter(ctx)
+        if escape == prev_escape:
+            return
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
 
 
 @val.bot.command(name="newcanon", help=st.NN_HELP, brief=st.NN_BRIEF)
@@ -124,11 +138,11 @@ async def new_canon(ctx):
     """Makes a new canon, including folders and player prefs."""
     overruled = util.check_perms(ctx)
     if not overruled:
-        status = await util.make_canon(ctx.message)
-        if status == util.get_escape(ctx):
+        e_nn = await util.make_canon(ctx.message)
+        if e_nn == util.get_escape(ctx):
             return
-        return await ctx.send(status + " " + st.rand_slack())
-    return await ctx.send(overruled + " " + st.rand_slack())
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
 
 
 @val.bot.command(name="deletecanon", help=st.DN_HELP, brief=st.DN_BRIEF)
@@ -136,13 +150,11 @@ async def delete_canon(ctx):
     """Deletes a canon, though preserves folders and player prefs."""
     overruled = util.check_perms(ctx)
     if not overruled:
-        status = await util.delete_canon(ctx.message)
-        if status == util.get_escape(ctx):
+        e_dn = await util.delete_canon(ctx.message)
+        if e_dn == util.get_escape(ctx):
             return
-        elif not status:
-            return
-        return await ctx.send(status + " " + st.rand_slack())
-    return await ctx.send(overruled + " " + st.rand_slack())
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
 
 
 @val.bot.command(name="newcharacter", help=st.NR_HELP, brief=st.NR_BRIEF)
@@ -152,28 +164,17 @@ async def new_character(ctx):
         e_nr = await util.add_character(ctx.message, ctx.message.author, ctx.message.channel)
         if e_nr == util.get_escape(ctx):
             return
-        return await ctx.send(st.SAVED + " " + st.rand_slack())
-    return await ctx.send(overruled + " " + st.rand_slack())
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
 
 
 @val.bot.command(name="listcharacters", help=st.LR_HELP, brief=st.LR_BRIEF)
 async def list_characters(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
-        return await ctx.send(util.get_characters(ctx.message))
-    return await ctx.send(overruled + " " + st.rand_slack())
-
-
-@val.bot.command(name="setescape", help=st.LR_HELP, brief=st.LR_BRIEF)
-async def set_escape(ctx):
-    overruled = util.check_perms(ctx)
-    if not overruled:
-        prev_escape = util.get_escape(ctx)
-        escape = await util.escape_setter(ctx)
-        if escape == prev_escape:
-            return
-        return await ctx.send(st.INF_ESCAPE_SET.format(escape) + " " + st.rand_slack())
-    return await ctx.send(overruled + " " + st.rand_slack())
+        return await util.get_characters(ctx.message)
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
 
 
 @val.bot.command(name="skillroll", help=st.SL_HELP, brief=st.SL_BRIEF)
@@ -181,11 +182,11 @@ async def skill_roll(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
         # Begin the skill roll.
-        final_string = await util.perform_skill_roll(ctx.message)
-        if final_string == util.get_escape(ctx):
+        e_sl = await util.perform_skill_roll(ctx.message)
+        if e_sl == util.get_escape(ctx):
             return
-        return await ctx.send(final_string)
-    return await ctx.send(overruled + " " + st.rand_slack())
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
 
 
 @val.bot.command(name="newcombat", help=st.NT_HELP, brief=st.NT_BRIEF)
@@ -196,7 +197,8 @@ async def new_combat(ctx):
         if e_rt == util.get_escape(ctx):
             return
         return await ctx.send(st.INF_DONE + " " + st.rand_slack())
-    return await ctx.send(overruled + " " + st.rand_slack())
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
 
 
 @val.bot.command(name="forecast", help=st.FT_HELP, brief=st.FT_BRIEF)

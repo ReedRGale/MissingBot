@@ -24,6 +24,7 @@ INF_DENIED_DELETE = "Seems people still like this world. At the very least, the 
 INF_DELETE_CHANNEL = "I zorked this because I was told to by the GM and the players voted for it."
 INF_DELETE_ROLE = "I blanged this because I was told to by the GM and the players agreed."
 INF_ESCAPE_SET = "Your new escape value is {}. Use it wisely."
+INF_MESSAGING_D = "I'll get the word out, then. I guess it's time to see if this canon gets to live."
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
@@ -76,6 +77,12 @@ NT_HELP = "To Call: '~dd skillroll' within an RP command_room\n\n" \
           "each member properly wants to participate/can participate in said combat, it sets up private channels " \
           "for each participant and opens the combat interface."
 
+SE_BRIEF = "'SetEscape' is a command that changes the phrase to tell me that'll stop the endless slew of questions."
+SE_HELP = "To Call: '~dd setescape' anywhere.\n\n" \
+          "When called, I'll ask ya for a phrase to replace the one that I typically use, '~dd' for escaping. " \
+          "Try not to make this something you'd say often, because I'll definitely mix it up with something " \
+          "you might want me to take as a command."
+
 HP_BRIEF = "'Help' is a standard help command. By calling '~dd help [item]' " \
            "on any command or all-caps word, you can get a small piece on that item."
 HP_HELP = "Good work. That is exactly how you check the detailed help docs of a command."
@@ -89,7 +96,7 @@ DB_HELP = "If I set this up properly, how did you ever get here...? Are you on m
 
 REQ_STATS = "Which stats are related to this roll? Separate with spaces. \n"
 REQ_ACTIVE_CHARACTER = "Which character is rolling? \n"
-REQ_CHARACTER = "Please provide a "
+REQ_CHARACTER = "So what's this character's {} value?"
 REQ_MOD_REASON = "What's one factor affecting this roll?"
 REQ_ROLL_PURPOSE = "What's this skill roll for?"
 REQ_MOD_AMOUNT = "By how many dice should this affect the roll? (i.e. -3, 4, 1, 2, etc...)"
@@ -111,8 +118,7 @@ REQ_NEW_ESCAPE = "So, tell me what your new escape value is gonna be. Just try n
 # Confirmations #
 
 
-ASK_IF_MODS = "Are there modifications to this roll? " \
-             "(i.e. Its dark; You made a torch to light the way; etc...)"
+ASK_IF_MODS = "Are there modifications to this roll? You know, those things that might change the roll value?"
 ASK_IF_MORE_MODS = "Any more modifications to make?"
 ASK_IF_FIGHT = "So, someone challenged you to combat. You gonna make that fight happen in canon?"
 ASK_IF_GM = "Are you really sure you want to do this? Managing an RP is hard and you might have just been " \
@@ -132,6 +138,9 @@ ERR_EXTRA_ARGS = "Whoa there pardner. That's a lot of arguments. Try to keep it 
 ERR_NOT_ENOUGH_ARGS = "Hey. Buddy. You need at least this many arguments to use this command: "
 ERR_PLAYER_EXIST = "Yo. So... uh... don't try to like... take this character's identity. K? They already exist. " \
                    "Let 'em be."
+ERR_NOT_INT = "Hey so, this is looking for numerical integer data. In layman's term's, that's numbers without the " \
+              "'.' in them. i.e 1, 2, 3 and not 3.4, 1.23, etc. So anyway. Try again."
+ERR_MEMBER_NONEXIST = "Hey, so... seems that the 'member' {} isn't in this server. Maybe try again, yeah?"
 ERR_PLAYER_NONEXIST = "Yo. So... uh... I don't know how to put this nicely. But... that player doesn't... exist? Yeah."
 ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one exists less than the other " \
                      "worlds that don't exist. That is, I don't have it in my records."
