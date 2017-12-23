@@ -6,7 +6,7 @@
 
 # Import #
 
-import random
+import discord
 import os
 import json
 from model import st, val, alias
@@ -121,14 +121,38 @@ async def on_ready():
 # Commands #
 
 
+@val.bot.command(name="help", help=st.HP_HELP, brief=st.HP_BRIEF)
+async def help_command(ctx, *args):
+    """Command to simplify referencing the help documents."""
+    overruled = util.check_perms(ctx)
+    if not overruled:
+        if args and len(args) == 1:  # If they want help with a specific command...
+            try:
+                await TidyMessage.build(ctx, util.get_escape(ctx), content=val.bot.get_command(args[0]).help,
+                                        req=False, mode=TidyMode.STANDARD)
+            except discord.ext.commands.errors.CommandInvokeError:
+                await TidyMessage.build(ctx, util.get_escape(ctx), content=st.ERR_WHAT,
+                                        req=False, mode=TidyMode.WARNING)
+        elif args:
+            await TidyMessage.build(ctx, util.get_escape(ctx), content=st.ERR_EXTRA_ARGS.format("one"),
+                                    req=False, mode=TidyMode.STANDARD)
+        else:  # Otherwise print out all command briefs.
+            # Prepare the string.
+            help_string = "Available Commands: \n\n"
+            available_commands = val.bot.all_commands
+            for name in available_commands:
+                help_string += "**" + name + "**" + ":  " + available_commands[name].brief + "\n\n"
+            return await TidyMessage.build(ctx, util.get_escape(ctx), content=help_string,
+                                           req=False, mode=TidyMode.STANDARD)
+    return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
+                                   mode=TidyMode.WARNING)
+
+
 @val.bot.command(name="setescape", help=st.SE_HELP, brief=st.SE_BRIEF)
 async def set_escape(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
-        prev_escape = util.get_escape(ctx)
-        escape = await util.escape_setter(ctx)
-        if escape == prev_escape:
-            return
+        return await util.escape_setter(ctx)
     return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
                                    mode=TidyMode.WARNING)
 
@@ -138,9 +162,7 @@ async def new_canon(ctx):
     """Makes a new canon, including folders and player prefs."""
     overruled = util.check_perms(ctx)
     if not overruled:
-        e_nn = await util.make_canon(ctx.message)
-        if e_nn == util.get_escape(ctx):
-            return
+        return await util.make_canon(ctx)
     return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
                                    mode=TidyMode.WARNING)
 
@@ -150,9 +172,7 @@ async def delete_canon(ctx):
     """Deletes a canon, though preserves folders and player prefs."""
     overruled = util.check_perms(ctx)
     if not overruled:
-        e_dn = await util.delete_canon(ctx.message)
-        if e_dn == util.get_escape(ctx):
-            return
+        return await util.delete_canon(ctx)
     return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
                                    mode=TidyMode.WARNING)
 
@@ -161,9 +181,7 @@ async def delete_canon(ctx):
 async def new_character(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
-        e_nr = await util.add_character(ctx.message, ctx.message.author, ctx.message.channel)
-        if e_nr == util.get_escape(ctx):
-            return
+        return await util.add_character(ctx)
     return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
                                    mode=TidyMode.WARNING)
 
@@ -172,7 +190,7 @@ async def new_character(ctx):
 async def list_characters(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
-        return await util.get_characters(ctx.message)
+        return await util.get_characters(ctx)
     return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
                                    mode=TidyMode.WARNING)
 
@@ -182,9 +200,7 @@ async def skill_roll(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
         # Begin the skill roll.
-        e_sl = await util.perform_skill_roll(ctx.message)
-        if e_sl == util.get_escape(ctx):
-            return
+        return await util.perform_skill_roll(ctx)
     return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
                                    mode=TidyMode.WARNING)
 
@@ -193,39 +209,9 @@ async def skill_roll(ctx):
 async def new_combat(ctx):
     overruled = util.check_perms(ctx)
     if not overruled:
-        e_rt = await util.new_combat(ctx.message)
-        if e_rt == util.get_escape(ctx):
-            return
-        return await ctx.send(st.INF_DONE + " " + st.rand_slack())
+        return await util.new_combat(ctx.message)
     return await TidyMessage.build(ctx, util.get_escape(ctx), req=False, content=overruled + " " + st.rand_slack(),
                                    mode=TidyMode.WARNING)
-
-
-@val.bot.command(name="forecast", help=st.FT_HELP, brief=st.FT_BRIEF)
-async def forecast(ctx, forecast, pool):
-    """A command to accurately estimate a forecasted amount of success in a dice pool."""
-    overruled = util.check_perms(ctx)
-    if not overruled:
-        return await ctx.send(st.INF_BROKEN + " " + st.rand_slack())
-    return await ctx.send(overruled + " " + st.rand_slack())
-
-
-@val.bot.command(name="help", help=st.HP_HELP, brief=st.HP_BRIEF)
-async def help_command(ctx, *args):
-    """Command to simplify referencing the help documents."""
-    overruled = util.check_perms(ctx)
-    if not overruled:
-        if args and len(args) == 1:  # If they want help with a specific command...
-            await ctx.send(val.bot.get_command(args[0]).help)
-        elif args:
-            await ctx.send(st.ERR_EXTRA_ARGS)
-        else:  # Otherwise print out all command briefs.
-            await ctx.send("Available Commands: \n\n")
-            available_commands = val.bot.all_commands
-            for name in available_commands:
-                if util.check_perms(ctx, command=name):
-                    await ctx.send(name + ":  " + available_commands[name].brief + "\n")
-    return await ctx.send(overruled + " " + st.rand_slack())
 
 
 @val.bot.command(name="debug", help=st.DB_HELP, brief=st.DB_BRIEF)
@@ -238,19 +224,8 @@ async def debug(ctx, *args):
     # The bot can only proceed linearly for each callback performed.
     # Multithreading can circumvent the linear nature of the bot's callbacks.
     # With some serious finagling, you can link and create a channel and a category.
-    tm = await TidyMessage.build(ctx, util.get_escape(ctx), "Repeat check.",
-                                 req=True, checks=[util.check_dups])
-    tm = await tm.rebuild("Whitespace check.",
-                          req=True, checks=[util.check_invalid_f(val.WHITESPACE)])
-    tm = await tm.rebuild("Affirmation check.",
-                          req=True, checks=[util.check_valid_f(alias.AFFIRM)])
-    tm = await tm.rebuild("More args than 3 check.",
-                          req=True, checks=[util.check_args_f(">", 3)])
-    tm = await tm.rebuild("Confirmation check.",
-                          req=True, checks=[util.check_alias_f(alias.CONFIRM_ALIASES)])
-    tm = await tm.rebuild("Confirmation check, no repeats.",
-                          req=True, checks=[util.check_alias_f(alias.CONFIRM_ALIASES, no_dups=True)])
-    return await tm.rebuild("If you made it here, seems we passed all tests. Soooo good on that, I guess.")
+    # Worked out TidyMessage kinks.
+    return await TidyMessage.build(ctx, util.get_escape(ctx), content="Nothing to see here!", req=False)
 
 
 # Code #

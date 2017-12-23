@@ -47,7 +47,7 @@ class TidyMessage:
 
         # Generate Message, Embed, and (potentially) the prompt.
         if kwargs.get("content"):
-            return await tm.rebuild(kwargs.get("content"), req, **kwargs)
+            return await tm.rebuild(req=req, **kwargs)
         else:
             return tm
 
@@ -89,7 +89,7 @@ class TidyMessage:
 
         # Delete the user command.
         try:
-            if not isinstance(self.source, discord.DMChannel):
+            if not isinstance(self.dest, discord.DMChannel):
                 await self.prompt.delete()
         except discord.errors.NotFound:
             pass  # If it's not there to be deleted we already did our job.
@@ -99,7 +99,7 @@ class TidyMessage:
             if tm == self.escape:
                 return self.escape
         else:  # Otherwise, send the message.
-            if isinstance(tm.message, discord.Message) and not isinstance(self.source, discord.DMChannel):
+            if isinstance(tm.message, discord.Message) and not isinstance(self.dest, discord.DMChannel):
                 await tm.message.delete()
             tm.message = await tm.dest.send(embed=tm.embed)
 

@@ -110,8 +110,8 @@ REQ_PLAYER = "So, which player is gonna to be using this character? Remember to 
              "the one with the '@' in it?"
 REQ_USER_GM = "Okay, so who's gonna be running this show? If it's you, tag yourself. Otherwise, tag someone else."
 REQ_REL_CANON = "Alright, so what canon is your poison today?"
-REQ_NEW_ESCAPE = "So, tell me what your new escape value is gonna be. Just try not to make it something you might" \
-                 "use normally like your character's name, because whenever I see it, I'm gonna blindly end the " \
+REQ_NEW_ESCAPE = "So, tell me what your new escape value is gonna be. Just try not to make it something you might " \
+                 "say normally like your character's name, because whenever I see it, I'm gonna blindly end the " \
                  "command, 'kay?"
 
 
@@ -134,7 +134,8 @@ ASK_IF_DELETE = "So, seems the time for this world has come to a close... accord
 ERR_REPEAT_1 = "Let's try that again."
 ERR_REPEAT_2 = "Try again. With feeling this time."
 
-ERR_EXTRA_ARGS = "Whoa there pardner. That's a lot of arguments. Try to keep it to around "
+ERR_EXTRA_ARGS = "Whoa there pardner. That's a lot of arguments. Try to keep it to around {}, okay?"
+ERR_WHAT = "Uh... what now?"
 ERR_NOT_ENOUGH_ARGS = "Hey. Buddy. You need at least this many arguments to use this command: "
 ERR_PLAYER_EXIST = "Yo. So... uh... don't try to like... take this character's identity. K? They already exist. " \
                    "Let 'em be."
@@ -185,6 +186,7 @@ ERR_NOT_IN_ALIAS = "I don't know the word {} in this context. Maybe try again?"
 
 # Other #
 
+ESCAPE_FN = "escape"
 
 ARCHIVES_FN = "_archives"
 GENERAL_FN = "general"
@@ -225,8 +227,8 @@ def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_typ
         pool_s = "Luck Roll..."
 
     final_string = \
-        "> " + purpose[0] + " (" + (norm_stat_types[0].title() if len(stats) == 1
-                                    else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
+        "> " + purpose + " (" + (norm_stat_types[0].title() if len(stats) == 1
+                                 else norm_stat_types[0].title() + " + " + norm_stat_types[1].title()) + ")\n" \
         + "> " + mod_s + '\n' \
         + "> " + pool_s + '\n' \
         + "> " + successes
