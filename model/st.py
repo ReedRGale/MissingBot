@@ -125,7 +125,7 @@ ASK_IF_GM = "Are you really sure you want to do this? Managing an RP is hard and
             "nominated for something you don't want to do. If so, just tell me 'no.' If not... well, your funeral. " \
             "You know what they say about funerals though. Can't spell it without 'fun.' \n\n" \
             "Anyway. What'll it be? Will you be this canon's god (world/RP)?"
-ASK_IF_DELETE = "So, seems the time for this world has come to a close... according to a GM anyway. Do you agree?" \
+ASK_IF_DELETE = "So, seems the time for this world has come to a close... according to a GM anyway. Do you agree? " \
                 "Yes? No? Nothing in between now, I don't like ambiguity when it comes to these things."
 
 

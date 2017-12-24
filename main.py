@@ -9,7 +9,7 @@
 import discord
 import os
 import json
-from model import st, val, alias
+from model import st, val
 from model.enums import UserType, TidyMode
 from view.TidyMessage import TidyMessage
 from controller import util
@@ -226,7 +226,6 @@ async def debug(ctx, *args):
     # With some serious finagling, you can link and create a channel and a category.
     # Worked out TidyMessage kinks.
     return await TidyMessage.build(ctx, util.get_escape(ctx), content="Nothing to see here!", req=False)
-
 
 # Code #
 

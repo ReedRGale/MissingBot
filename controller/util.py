@@ -55,20 +55,24 @@ async def make_canon(ctx):
 
     # If the GM isn't the maker of the canon, ask them if they want to take on this hell.
     while not have_gm and not borked:
-        dm_tm = await TidyMessage.build(ctx, get_escape(ctx), content=st.ASK_IF_GM, dest=get_member(gm).dm_channel,
+        mem = get_member(ctx, gm)
+        if not mem.dm_channel:
+            await mem.create_dm()
+        dm_tm = await TidyMessage.build(ctx, get_escape(ctx), content=st.ASK_IF_GM,
+                                        dest=mem.dm_channel, member=mem,
                                         checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                                 check_args_f("==", 1)])
         result = dm_tm.prompt.content
-        if result.content.lower() in alias.AFFIRM:
-            await dm_tm.rebuild(st.YOUR_FUNERAL)
+        if result.lower() in alias.AFFIRM:
+            await dm_tm.rebuild(st.YOUR_FUNERAL, req=False)
             have_gm = True
-        elif result.content.lower() in alias.DENY:
-            await dm_tm.rebuild(st.INF_NOT_GM)
+        elif result.lower() in alias.DENY:
+            await dm_tm.rebuild(st.INF_NOT_GM, req=False)
             borked = True
 
     # If GM denied the lofty position, let the caller know.
     if borked:
-        return tm.rebuild(st.INF_DENIED_GM)
+        return await tm.rebuild(st.INF_DENIED_GM)
 
     # Make category for the canon to reside in.
     category = await ctx.guild.create_category(canon)
@@ -193,7 +197,7 @@ async def delete_canon(ctx):
     # Tally up all participants in this canon.
     for mem in ctx.guild.members:
         user = get_user_type(mem, ctx.channel)
-        if user == UserType.PLAYER.value or user == UserType.GM.value and mem != ctx.author:
+        if user == UserType.PLAYER.value or (user == UserType.GM.value and mem != ctx.author):
             players.append(mem)
 
     # Notify users.
@@ -201,16 +205,17 @@ async def delete_canon(ctx):
     for mem in players:
         if not mem.dm_channel:
             await mem.create_dm()
-        affirmations.append(asyncio.ensure_future(wait_for_affirmation(ctx, mem.dm_channel, st.ASK_IF_DELETE)))
+        affirmations.append(asyncio.ensure_future(wait_for_affirmation(ctx, mem.dm_channel, mem, st.ASK_IF_DELETE)))
 
     # Await results...
     majority = math.ceil((len(players) + yes) / 2)
     while yes < majority and no < majority:
         done, affirmations = await tasks.wait(affirmations, return_when=asyncio.FIRST_COMPLETED)
         for d in done:
-            if d.result().message.content.lower() in alias.AFFIRM:
+            print(d.result())
+            if d.result().prompt.content.lower() in alias.AFFIRM:
                 yes += 1
-            elif d.result().message.content.lower() in alias.DENY:
+            elif d.result().prompt.content.lower() in alias.DENY:
                 no += 1
 
     # Process results.
@@ -602,11 +607,12 @@ def check_alias_f(aliases, no_dups=False):
 # Tasks #
 
 
-async def wait_for_affirmation(ctx, channel, content):
+async def wait_for_affirmation(ctx, channel, member, content):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
-    return TidyMessage.build(ctx, get_escape(ctx), dest=channel, content=content,
-                             checks=[check_alias_f(alias.CONFIRM_ALIASES),
-                                     check_args_f("==", 1)])
+    tm = await TidyMessage.build(ctx, get_escape(ctx), content=content, dest=channel, member=member,
+                                 checks=[check_alias_f(alias.CONFIRM_ALIASES),
+                                         check_args_f("==", 1)])
+    return await tm.rebuild("Vote tallied.", req=False)
 
 
 # Utility #

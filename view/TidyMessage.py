@@ -22,6 +22,7 @@ class TidyMessage:
         self.escape = kwargs.get("escape")
         self.title = kwargs.get("title")
         self.dest = kwargs.get("dest")
+        self.member = kwargs.get("member")
 
         # Information generated in rebuild()
         self.prompt = kwargs.get("prompt")
@@ -35,12 +36,14 @@ class TidyMessage:
             ctx:        Is the context within which this TM was made
             content:    Is the content to be put into the embed
             mode:       Is the TidyMode to use to grab default values for the Embed (STANDARD by default)
-            dest:       Is the endpoint where messages will be sent (ctx.channel by default)"""
+            dest:       Is the endpoint where messages will be sent (ctx.channel by default)
+            member:     Is the user that we're looking for messages from (ctx.message.author by default)"""
         # Make the TM instance.
         tm = TidyMessage(ctx=ctx, escape=escape, prompt=ctx.message)
         tm.mode = kwargs.get("mode") if kwargs.get("mode") else TidyMode.STANDARD
         tm.title = kwargs.get("title") if kwargs.get("title") else ""
         tm.dest = kwargs.get("dest") if kwargs.get("dest") else ctx.channel
+        tm.member = kwargs.get("member") if kwargs.get("member") else ctx.message.author
 
         # If an 'id' exists, edit that message instead of making a new message.
         tm.message = tm.ctx.get_message(kwargs.get("id")) if kwargs.get("id") else None
@@ -65,6 +68,7 @@ class TidyMessage:
                          escape=self.escape,
                          title=self.title,
                          dest=self.dest,
+                         member=self.member,
                          prompt=self.prompt,
                          message=self.message,
                          embed=self.embed)
@@ -139,8 +143,8 @@ class TidyMessage:
             tm = await tm.rebuild(content if not again else repeat + " " + content, req=False)
 
             # Define check
-            a = self.prompt.author
-            c = self.prompt.channel
+            a = self.member
+            c = self.dest
 
             def check(resp):
                 return resp.author == a and resp.channel == c
