@@ -25,7 +25,7 @@ from controller import calc
 async def escape_setter(ctx):
     """A function that encapsulates everything regarding changing a personal escape value."""
     # Request new escape value.
-    tm = await TidyMessage.build(ctx, get_escape(ctx), content=st.REQ_NEW_ESCAPE,
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_ESCAPE,
                                  checks=[check_args_f("==", 1)])
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
@@ -37,7 +37,7 @@ async def escape_setter(ctx):
 async def make_canon(ctx):
     """Makes a canon folder and files."""
     # Ask for RP name
-    tm = await TidyMessage.build(ctx, get_escape(ctx), content=st.REQ_NEW_CANON,
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_CANON,
                                  checks=[check_args_f("==", 1)])
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
@@ -55,10 +55,10 @@ async def make_canon(ctx):
 
     # If the GM isn't the maker of the canon, ask them if they want to take on this hell.
     while not have_gm and not borked:
-        mem = get_member(ctx, gm)
+        mem = get_member(ctx, mention=gm)
         if not mem.dm_channel:
             await mem.create_dm()
-        dm_tm = await TidyMessage.build(ctx, get_escape(ctx), content=st.ASK_IF_GM,
+        dm_tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.ASK_IF_GM,
                                         dest=mem.dm_channel, member=mem,
                                         checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                                 check_args_f("==", 1)])
@@ -77,24 +77,27 @@ async def make_canon(ctx):
     # Make category for the canon to reside in.
     category = await ctx.guild.create_category(canon)
 
+    # Path syntactical candy.
+    g = str(ctx.guild.id)
+    c = str(category.id)
+
     # Make folder, initial docs and roles.
-    canons_dir = "model\\" + str(ctx.guild.id) + "\\" + st.CANONS_FN
-    arch_dir = canons_dir + "\\" + st.ARCHIVES_FN
-    canon_dir = canons_dir + "\\" + str(category.id)
-    if not os.path.exists(canon_dir):
+    if not os.path.exists(st.CANON_P.format(g, c)):
         # Prepare all directories.
-        if not os.path.exists(arch_dir):
-            os.makedirs(arch_dir)
-        os.makedirs(canon_dir + "\\" + st.CHARACTERS_FN)
-        os.makedirs(canon_dir + "\\" + st.LOGS_FN)
-        os.makedirs(canon_dir + "\\" + st.META_FN)
-        pref_dir = canon_dir + "\\" + st.PLAYER_PREFS_FN
-        os.makedirs(pref_dir)
+        if not os.path.exists(st.ARCHIVES_P.format(g, c)):
+            os.makedirs(st.ARCHIVES_P.format(g, c))
+        os.makedirs(st.CHARACTERS_P.format(g, c))
+        os.makedirs(st.C_LOGS_P.format(g, c))
+        os.makedirs(st.META_P.format(g, c))
+        os.makedirs(st.C_PLAYER_PREFS_P.format(g, c))
+
+        for mem in ctx.guild.members:
+            if not os.path.exists(st.MEM_COMMAND_C_LOGS_P.format(g, c, str(mem.id))):
+                os.makedirs(st.MEM_COMMAND_C_LOGS_P.format(g, c, str(mem.id)))
 
         # Make a file to handle the command exceptions
-        except_dir = canon_dir + "\\" + st.META_FN + "\\" + st.EXCEPTIONS_FN
-        open(except_dir, "a").close()
-        with open(except_dir, "w") as fout:
+        open(st.EXCEPTIONS_P.format(g, c), "a").close()
+        with open(st.EXCEPTIONS_P.format(g, c), "w") as fout:
             json.dump({}, fout, indent=1)
 
         # Make roles to discern who can do what.
@@ -105,9 +108,9 @@ async def make_canon(ctx):
             r_dat[r.name] = r.id
 
         # Record the role ids for later access.
-        role_dir, role_ids = canon_dir + "\\" + st.META_FN + "\\" + st.ROLES_FN, {}
-        open(role_dir, "a").close()
-        with open(role_dir, "w") as fout:
+        role_ids = dict()
+        open(st.ROLES_P.format(g, c), "a").close()
+        with open(st.ROLES_P.format(g, c), "w") as fout:
             for r in role:
                 role_type = r.name.split()[1]
                 role_ids[role_type] = r.id
@@ -115,8 +118,7 @@ async def make_canon(ctx):
 
         # For each member in the channel, make a file and add them to the proper role.
         for mem in ctx.guild.members:
-            player_pref = pref_dir + "\\" + str(mem.id) + ".json"
-            with open(player_pref, "a") as fout:
+            with open(st.C_PLAYER_PREF_P.format(g, c, str(mem.id)), "a") as fout:
                 if gm == mem.mention:
                     pref = {"user_type": UserType.GM.value, "relevant_character": None}
                     await mem.add_roles(role[2])
@@ -137,59 +139,58 @@ async def make_canon(ctx):
         rw = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
         # Make channels for specific purposes per role.
-        c = ["_IC", "_OOC", "_command_room", "_rules", "_meta", "_gm_notes"]
-        c_dat = dict()
+        ch = ["_IC", "_OOC", "_command_room", "_rules", "_meta", "_gm_notes"]
+        ch_dat = dict()
 
         # IC Channel is locked on creation.
-        channel = await ctx.guild.create_text_channel(canon + c[0], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[0], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: r})
-        c_dat[channel.name] = channel.id
+        ch_dat[channel.name] = channel.id
 
         # OOC Channel is open to all on creation.
-        channel = await ctx.guild.create_text_channel(canon + c[1], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[1], category=category,
                                                       overwrites={role[0]: rw, role[1]: rw, role[2]: rw})
-        c_dat[channel.name] = channel.id
+        ch_dat[channel.name] = channel.id
 
         # Command Room is open only to players and the gm.
-        channel = await ctx.guild.create_text_channel(canon + c[2], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[2], category=category,
                                                       overwrites={role[0]: n, role[1]: rw, role[2]: rw})
-        c_dat[channel.name] = channel.id
+        ch_dat[channel.name] = channel.id
 
         # Rules is for posting that which people should follow that the bot doesn't enforce.
-        channel = await ctx.guild.create_text_channel(canon + c[3], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[3], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: rw})
-        c_dat[channel.name] = channel.id
+        ch_dat[channel.name] = channel.id
 
         # Meta is for viewing the meta-rules of the canon only. The GM only affects these indirectly.
-        channel = await ctx.guild.create_text_channel(canon + c[4], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[4], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: r})
-        c_dat[channel.name] = channel.id
+        ch_dat[channel.name] = channel.id
 
         # GM Notes is for the gm's eyes only.
-        channel = await ctx.guild.create_text_channel(canon + c[5], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[5], category=category,
                                                       overwrites={role[0]: n, role[1]: n, role[2]: rw})
-        c_dat[channel.name] = channel.id
+        ch_dat[channel.name] = channel.id
 
         # Record untouchable instance of data.
-        meta_dir = canon_dir + "\\" + st.META_FN + "\\" + str(st.IDS_FN)
-        with open(meta_dir, "a") as fout:
-            json.dump({"channels": c_dat, "roles": r_dat}, fout, indent=1)
+        with open(st.IDS_P.format(g, c), "a") as fout:
+            json.dump({"channels": ch_dat, "roles": r_dat}, fout, indent=1)
 
-    await tm.rebuild(status + " " + st.rand_slack())
+    await tm.rebuild(status + " " + st.rand_slack(), req=False)
 
 
-# TODO: Test user DMing feature.
 async def delete_canon(ctx):
     """Deletes a canon and archives its data in case its remade."""
+    # Check if canon exists.
+    if not get_canon(ctx):
+        return TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, req=False, content=st.ERR_CANON_NONEXIST,
+                                 mode=TidyMode.WARNING)
+
     # Initialize a tm.
-    tm = await TidyMessage.build(ctx, get_escape(ctx), req=False, content=st.INF_MESSAGING_D)
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, req=False, content=st.INF_MESSAGING_D)
 
     # Collect all players in canon.
     players = list()
-
-    if not get_canon(ctx):
-        return TidyMessage.build(ctx, get_escape(ctx), req=False, content=st.ERR_CANON_NONEXIST,
-                                 mode=TidyMode.WARNING)
 
     # Prepare categories.
     yes, no = 1, 0  # Yes starts at one because the caller of the function is presumed to support deletion.
@@ -212,7 +213,6 @@ async def delete_canon(ctx):
     while yes < majority and no < majority:
         done, affirmations = await tasks.wait(affirmations, return_when=asyncio.FIRST_COMPLETED)
         for d in done:
-            print(d.result())
             if d.result().prompt.content.lower() in alias.AFFIRM:
                 yes += 1
             elif d.result().prompt.content.lower() in alias.DENY:
@@ -220,41 +220,27 @@ async def delete_canon(ctx):
 
     # Process results.
     if majority <= yes:
-        # Prepare the directory we're going to move.
-        canon_dir = "model\\" \
-                    + str(ctx.guild.id) + "\\" \
-                    + st.CANONS_FN + "\\" \
-                    + str(ctx.channel.category_id)
+        # Path syntactical candy.
+        g = str(ctx.guild.id)
+        c = str(ctx.channel.category_id)
 
         # Delete categories and roles in list.
-        meta_dir = canon_dir + "\\" \
-                   + st.META_FN + "\\" \
-                   + st.IDS_FN
-
         guild_name = ctx.guild.get_channel(ctx.channel.category_id).name
-
-        with open(meta_dir, "r") as fout:
+        with open(st.IDS_P.format(g, c), "r") as fout:
             ids_json = json.load(fout)
-            for c in ctx.guild.channels:
-                if c.category_id == ctx.channel.category_id and ids_json["channels"].get(c.name):
-                    await c.delete(reason=st.INF_DELETE_CHANNEL)
-
+            for ch in ctx.guild.channels:
+                if ch.category_id == ctx.channel.category_id and ids_json["channels"].get(ch.name):
+                    await ch.delete(reason=st.INF_DELETE_CHANNEL)
             for r in ctx.guild.roles:
                 if ids_json["roles"].get(r.name):
                     await r.delete(reason=st.INF_DELETE_ROLE)
-
-            for c in ctx.guild.channels:
-                if c.id == ctx.channel.category_id:
-                    await c.delete()
+            for ch in ctx.guild.channels:
+                if ch.id == ctx.channel.category_id:
+                    await ch.delete()
                     break
 
-        # Move canon data to _archive
-        arch_dir = "model\\" \
-                   + str(ctx.guild.id) + "\\" \
-                   + st.CANONS_FN + "\\" \
-                   + st.ARCHIVES_FN + "\\" \
-                   + guild_name
-        os.rename(canon_dir, arch_dir)
+        # Move canon data to archive
+        os.rename(st.CANON_P.format(g, c), st.ARCHIVE_P.format(g, guild_name))
 
     elif no >= majority and yes >= majority or yes < majority and no < majority:
         tm.rebuild(st.ERR_VOTE_FAILED, mode=TidyMode.WARNING)
@@ -265,7 +251,7 @@ async def delete_canon(ctx):
 async def add_character(ctx):
     """A function to store a JSON entry of a character"""
     # Initialize a tm.
-    tm = await TidyMessage.build(ctx, get_escape(ctx))
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE)
 
     # By default, the author of the character is the caller.
     author = tm.prompt.author
@@ -284,7 +270,7 @@ async def add_character(ctx):
                 return get_escape(ctx)
 
             # Convert mention to member instance.
-            player = get_member(ctx, tm.prompt.content)
+            player = get_member(ctx, mention=tm.prompt.content)
 
             # Check if player exists/isn't an observer
             if player is None:
@@ -331,26 +317,18 @@ async def add_character(ctx):
             else:
                 repeat = st.ERR_INV_FORM + " "
 
+    # Path syntactical candy.
+    g = str(ctx.guild.id)
+    c = str(ctx.channel.category_id)
+
     # Update character file.
-    character_file = "model\\" \
-                     + str(ctx.guild.id) + "\\" \
-                     + st.CANONS_FN + "\\" \
-                     + str(ctx.channel.category_id) + "\\" \
-                     + st.CHARACTERS_FN + "\\" \
-                     + character["NAME"] + ".json"
-    with open(character_file, "w") as fout:
+    with open(st.CHARACTER_P.format(g, c, character["NAME"]), "w") as fout:
         json.dump(character, fout, indent=1)
 
     # Update player prefs.
     prefs = get_prefs(author, ctx.channel)
     prefs["relevant_character"] = character["NAME"]
-    prefs_file = "model\\" \
-                 + str(ctx.guild.id) + "\\" \
-                 + st.CANONS_FN + "\\" \
-                 + str(ctx.channel.category_id) + "\\" \
-                 + st.PLAYER_PREFS_FN + "\\" \
-                 + str(author.id) + ".json"
-    with open(prefs_file, "w") as fout:
+    with open(st.C_PLAYER_PREF_P.format(g, c, str(author.id)), "w") as fout:
         json.dump(prefs, fout, indent=1)
 
     # Confirm that the data is saved.
@@ -358,17 +336,21 @@ async def add_character(ctx):
 
 
 async def get_characters(ctx):
+    """Returns all characters in a tidy list."""
+    # Check if this makes sense at all.
+    if not get_canon(ctx):
+        return TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, req=False, content=st.ERR_NOT_IN_CANON,
+                                 mode=TidyMode.WARNING)
 
-    canon_path = get_canon(ctx)
-
-    if not canon_path:
-        return TidyMessage.build(ctx, get_escape(ctx), req=False, content=st.ERR_NOT_IN_CANON, mode=TidyMode.WARNING)
+    # Path syntactical candy.
+    g = str(ctx.guild.id)
+    c = str(ctx.channel.category_id)
 
     # Load in file.
-    c_names, c_json = os.listdir(canon_path + "\\" + st.CHARACTERS_FN), {}
-    for c in c_names:
-        with open(canon_path + "\\" + st.CHARACTERS_FN + "\\" + c, "r") as fout:
-            c_json[c] = json.load(fout)
+    c_names, c_json = os.listdir(st.CHARACTERS_P.format(g, c)), {}
+    for ch in c_names:
+        with open(st.CHARACTER_P.format(g, c, ch), "r") as fout:
+            c_json[ch] = json.load(fout)
 
     # Concatenate all names.
     all_names = "Character Names: \n"
@@ -376,14 +358,14 @@ async def get_characters(ctx):
     for key in c_names:
         all_names += '~ ' + c_json[key]["NAME"] + '\n'
 
-    return await TidyMessage.build(ctx, get_escape(ctx), req=False, content=all_names)
+    return await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, req=False, content=all_names)
 
 
 async def perform_skill_roll(ctx):
     """Performs a basic skill roll."""
     #  ASK FOR BASIC INFO  #
     # Request roll purpose.
-    tm = await TidyMessage.build(ctx, get_escape(ctx), content=st.REQ_ROLL_PURPOSE)
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_ROLL_PURPOSE)
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
     purpose = tm.prompt.content
@@ -463,14 +445,8 @@ async def perform_skill_roll(ctx):
 
 async def new_combat(ctx):
     """Begins a combat by opening the relevant channels"""
-    # Prepare canon file path.
-    canon = "model\\" \
-            + str(ctx.guild.id) + "\\" \
-            + st.CANONS_FN + "\\" \
-            + str(ctx.channel.category_id)
-
     # Ask for players.
-    tm = TidyMessage.build(ctx, get_escape(ctx), content=st.REQ_USER_COMBAT,
+    tm = TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_USER_COMBAT,
                            checks=[check_member_f(ctx),
                                    check_args_f(">=", 2)])
     if tm.prompt.content == get_escape(ctx):
@@ -527,7 +503,7 @@ def check_member_f(ctx):
     """A check-factory that makes a check to see if the arguments are all members of a particular context."""
     def check(*args):
         for mem in args:
-            if not get_member(ctx, mem):
+            if not get_member(ctx, mention=mem):
                 return st.ERR_MEMBER_NONEXIST.format(mem)
         return True
     return check
@@ -609,7 +585,7 @@ def check_alias_f(aliases, no_dups=False):
 
 async def wait_for_affirmation(ctx, channel, member, content):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
-    tm = await TidyMessage.build(ctx, get_escape(ctx), content=content, dest=channel, member=member,
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=content, dest=channel, member=member,
                                  checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                          check_args_f("==", 1)])
     return await tm.rebuild("Vote tallied.", req=False)
@@ -627,14 +603,12 @@ def check_perms(ctx, command=""):
         # Check role of player against those allowed to call command.
         can_call = get_user_type(ctx.message.author, ctx.channel) in val.perms[command]
 
+        # Path syntactical candy.
+        g = str(ctx.guild.id)
+        c = str(ctx.channel.category_id)
+
         # Check if on exception list.
-        meta_dir = "model\\" \
-                   + str(ctx.guild.id) + "\\" \
-                   + st.CANONS_FN + "\\" \
-                   + str(ctx.channel.category_id) + "\\" \
-                   + st.META_FN + "\\" \
-                   + st.EXCEPTIONS_FN
-        with open(meta_dir, "r") as fout:
+        with open(st.EXCEPTIONS_P.format(g, c), "r") as fout:
             exc_json = json.load(fout)
             can_call = can_call or (exc_json.get(command).get(ctx.message.author.id)
                                     if exc_json.get(command) else False)
@@ -655,32 +629,29 @@ def check_perms(ctx, command=""):
 def make_general_player_prefs(guild):
     """Initializes the player prefs if they don't exist."""
     # Make folder and initial docs if they don't exist.
-    pref_dir = "model\\" \
-               + str(guild.id) + "\\" \
-               + st.GENERAL_FN + "\\" \
-               + st.PLAYER_PREFS_FN
-    if not os.path.exists(pref_dir):
-        os.makedirs(pref_dir)
+    if not os.path.exists(st.G_PLAYER_PREFS_P.format(str(guild.id))):
+        os.makedirs(st.G_PLAYER_PREFS_P.format(str(guild.id)))
+    if not os.path.exists(st.COMMAND_G_LOGS_P.format(str(guild.id))):
+        os.makedirs(st.COMMAND_G_LOGS_P.format(str(guild.id)))
 
     # For each member in the channel, make a file.
     for mem in guild.members:
-        player_pref = pref_dir + "\\" + str(mem.id) + ".json"
-        if not os.path.exists(player_pref):
-            with open(player_pref, "a") as fout:
-                pref = {st.ESCAPE_FN: '~'}
+        if not os.path.exists(st.G_PLAYER_PREF_P.format(str(guild.id), str(mem.id))):
+            with open(st.G_PLAYER_PREF_P.format(str(guild.id), str(mem.id)), "a") as fout:
+                pref = {st.ESCAPE_ARG: '~'}
                 json.dump(pref, fout, indent=1)
+        if not os.path.exists(st.MEM_COMMAND_G_LOGS_P.format(str(guild.id), str(mem.id))):
+            os.makedirs(st.MEM_COMMAND_G_LOGS_P.format(str(guild.id), str(mem.id)))
 
 
 def get_prefs(member, channel):
     """Returns the prefs of the user as a JSON."""
-    pref_path = "model\\" \
-                + str(channel.guild.id) + "\\" \
-                + st.CANONS_FN + "\\" \
-                + str(channel.category_id) + "\\" \
-                + st.PLAYER_PREFS_FN + "\\" \
-                + str(member.id) + ".json"
-    if os.path.exists(pref_path):
-        with open(pref_path, "r") as fin:
+    # Path syntactical candy.
+    g = str(channel.guild.id)
+    c = str(channel.category_id)
+    m = str(member.id)
+    if os.path.exists(st.C_PLAYER_PREF_P.format(g, c, m)):
+        with open(st.C_PLAYER_PREF_P.format(g, c, m), "r") as fin:
             prefs = json.load(fin)
         return prefs
     return None
@@ -689,7 +660,7 @@ def get_prefs(member, channel):
 def get_canon(ctx):
     """Returns the category file path or None of doesn't exist."""
     if ctx.channel.category_id:
-        canon = "model\\" + str(ctx.guild.id) + "\\" + st.CANONS_FN + "\\" + str(ctx.channel.category_id)
+        canon = st.CANON_P.format(str(ctx.guild.id), str(ctx.channel.category_id))
         return canon if os.path.exists(canon) else None
 
 
@@ -699,30 +670,28 @@ def get_user_type(member, channel):
 
 
 def get_character_json(character, channel):
-    """Returns an object with all character values in it."""
+    """Returns an dictionary of character stats."""
+    # Path syntactical candy.
+    g = str(channel.guild.id)
+    c = str(channel.category_id)
+
     # Pull JSON file for reading.
-    character_file = "model\\" \
-                     + str(channel.guild.id) + "\\" \
-                     + st.CANONS_FN + "\\" \
-                     + str(channel.category_id) + "\\" \
-                     + st.CHARACTERS_FN + "\\" \
-                     + character + ".json"
-    open(character_file, "a").close()
-    with open(character_file, "r") as fin:
-        if os.stat(character_file).st_size > 0:
+    open(st.CHARACTER_P.format(g, c, character), "a").close()
+    with open(st.CHARACTER_P.format(g, c, character), "r") as fin:
+        if os.stat(st.CHARACTER_P.format(g, c, character)).st_size > 0:
             a = json.load(fin)
         else:
             a = {}
     return a
 
 
-def get_member(ctx, mention, user_id=""):
+def get_member(ctx, **kwargs):
     """Returns the user by mention or None, if none found. If an ID is provided, returns based off of that instead."""
 
     # # If ID provided, return what the bot would return. # #
 
-    if user_id:
-        return val.bot.get_user(user_id)
+    if kwargs.get("id"):
+        return val.bot.get_user(kwargs.get("id"))
 
     # # If no ID provided, return based on mention. # #
 
@@ -731,19 +700,17 @@ def get_member(ctx, mention, user_id=""):
     for mem in ctx.guild.members:
         members[mem.mention] = mem
 
-    return members.get(mention)
+    return members.get(kwargs.get("mention"))
 
 
 def get_escape(ctx):
     """Get the escape value of a member."""
-    pref_dir = "model\\" \
-               + str(ctx.guild.id) + "\\" \
-               + st.GENERAL_FN + "\\" \
-               + st.PLAYER_PREFS_FN + "\\" \
-               + str(ctx.author.id) + ".json"
-    with open(pref_dir, "r") as fin:
+    # Path syntactical candy.
+    g = str(ctx.guild.id)
+    a = str(ctx.author.id)
+    with open(st.G_PLAYER_PREF_P.format(g, a), "r") as fin:
         pref_json = json.load(fin)
-    return pref_json[st.ESCAPE_FN]
+    return pref_json[st.ESCAPE_ARG]
 
 
 def get_app_token():
@@ -764,18 +731,17 @@ def redeem_alias(alias_i, aliases):
 
 def set_escape(ctx, escape):
     """Set the escape value of a member."""
-    pref_dir = "model\\" \
-               + str(ctx.guild.id) + "\\" \
-               + st.GENERAL_FN + "\\" \
-               + st.PLAYER_PREFS_FN + "\\" \
-               + str(ctx.author.id) + ".json"
-    
-    with open(pref_dir, "r") as fin:
+    # Path syntactical candy.
+    g = str(ctx.guild.id)
+    a = str(ctx.author.id)
+
+    # Get the current prefs.
+    with open(st.G_PLAYER_PREF_P.format(g, a), "r") as fin:
         pref_json = json.load(fin)
 
-    pref_json[st.ESCAPE_FN] = escape
-
-    with open(pref_dir, "w") as fout:
+    # Load and dump the new prefs with the changed escape.
+    pref_json[st.ESCAPE_ARG] = escape
+    with open(st.G_PLAYER_PREF_P.format(g, a), "w") as fout:
         json.dump(pref_json, fout, indent=1)
 
 

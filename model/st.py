@@ -108,7 +108,7 @@ REQ_USER_COMBAT = "Now, which users are taking part in this 'glorious brawl?' Yo
                   "Ex: @DJ Dante , @ReedRGale"
 REQ_PLAYER = "So, which player is gonna to be using this character? Remember to use their taggable name. You know, " \
              "the one with the '@' in it?"
-REQ_USER_GM = "Okay, so who's gonna be running this show? If it's you, tag yourself. Otherwise, tag someone else."
+REQ_USER_GM = "Okay. So who's gonna be running this show? If it's you, tag yourself. Otherwise, tag someone else."
 REQ_REL_CANON = "Alright, so what canon is your poison today?"
 REQ_NEW_ESCAPE = "So, tell me what your new escape value is gonna be. Just try not to make it something you might " \
                  "say normally like your character's name, because whenever I see it, I'm gonna blindly end the " \
@@ -184,12 +184,24 @@ ERR_REPEAT_VAL = "So, you don't repeat variables here. Please. You know the one 
 ERR_NOT_IN_ALIAS = "I don't know the word {} in this context. Maybe try again?"
 
 
-# Other #
+# Args #
 
-ESCAPE_FN = "escape"
+ESCAPE_ARG = "escape"
+PAGE_ARG = "page"
+TITLE_ARG = "title"
+CONTENT_ARG = "content"
+MODE_ARG = "mode"
+PATH_ARG = "path"
+EDITABLE_ARG = "editable"
 
+
+# File Names #
+
+
+MODEL_FN = "model"
 ARCHIVES_FN = "_archives"
 GENERAL_FN = "general"
+GUILDS_FN = "guilds"
 CHARACTERS_FN = "characters"
 META_FN = "meta"
 LOGS_FN = "logs"
@@ -197,7 +209,43 @@ CANONS_FN = "canons"
 PLAYER_PREFS_FN = "player_prefs"
 ROLES_FN = "roles.json"
 EXCEPTIONS_FN = "command_exceptions.json"
+COMMANDS_FN = "commands"
 IDS_FN = "canon_ids.json"
+
+
+# File Paths #
+                                                            # Formatting String Args:
+
+GUILDS_P = MODEL_FN + "\\" + GUILDS_FN                      # None
+GUILD_P = GUILDS_P + "\\{}"                                 # Guild ID
+CANONS_P = GUILD_P + "\\" + CANONS_FN                       # Guild ID
+CANON_P = CANONS_P + "\\{}"                                 # Guild ID, Canon ID
+CHARACTERS_P = CANON_P + "\\" + CHARACTERS_FN               # Guild ID, Canon ID
+CHARACTER_P = CHARACTERS_P + "\\{}.json"                    # Guild ID, Canon ID, Character Name
+C_LOGS_P = CANON_P + "\\" + LOGS_FN                         # Guild ID, Canon ID
+COMMAND_C_LOGS_P = C_LOGS_P + "\\" + COMMANDS_FN            # Guild ID, Canon ID
+MEM_COMMAND_C_LOGS_P = COMMAND_C_LOGS_P + "\\{}"            # Guild ID, Canon ID, Member ID
+MEM_COMMAND_C_LOG_P = MEM_COMMAND_C_LOGS_P + "\\{}.json"    # Guild ID, Canon ID, Member ID, (Command Name + Number)
+META_P = CANON_P + "\\" + META_FN                           # Guild ID, Canon ID
+IDS_P = META_P + "\\" + IDS_FN                              # Guild ID, Canon ID
+EXCEPTIONS_P = META_P + "\\" + EXCEPTIONS_FN                # Guild ID, Canon ID
+ROLES_P = META_P + "\\" + ROLES_FN                          # Guild ID, Canon ID
+C_PLAYER_PREFS_P = CANON_P + "\\" + PLAYER_PREFS_FN         # Guild ID, Canon ID
+C_PLAYER_PREF_P = C_PLAYER_PREFS_P + "\\{}.json"            # Guild ID, Canon ID, Member ID
+ARCHIVES_P = CANONS_P + "\\" + ARCHIVES_FN                  # Guild ID,
+ARCHIVE_P = ARCHIVES_P + "\\{}"                             # Guild ID, Canon Name
+GENERAL_P = GUILD_P + "\\" + GENERAL_FN                     # Guild ID
+G_PLAYER_PREFS_P = GENERAL_P + "\\" + PLAYER_PREFS_FN       # Guild ID
+G_PLAYER_PREF_P = G_PLAYER_PREFS_P + "\\{}.json"            # Guild ID, Member ID
+G_LOGS_P = GENERAL_P + "\\" + LOGS_FN                       # Guild ID
+COMMAND_G_LOGS_P = G_LOGS_P + "\\" + COMMANDS_FN            # Guild ID
+MEM_COMMAND_G_LOGS_P = COMMAND_G_LOGS_P + "\\{}"            # Guild ID, Member ID
+MEM_COMMAND_G_LOG_P = MEM_COMMAND_G_LOGS_P + "\\{}.json"    # Guild ID, Member ID, (Command Name + Number)
+
+
+# Other #
+
+
 SUCCESS = "S - "
 FAILURE = "F - "
 AGAIN = "A - "
