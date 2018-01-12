@@ -17,7 +17,23 @@ from model.enums import TidyMode
 
 class TidyMessage:
     """Class designed to handle keeping long chains of commands clean, contain generalized command buttons
-    and to log information for later usage."""
+    and to log information for later usage.
+
+    ::Use Cases::
+
+    General:            tm = await TidyMessage.build(ctx, {escape character}, {error on escape},
+                                                     content={content of first TM},
+                                                     checks=[{checks}])
+
+    Out-of-Channel:     tm = await TidyMessage.build(ctx, {escape character}, {error on escape},
+                                                     content={content of first TM},
+                                                     dest={destination channel},
+                                                     checks=[{checks}])
+
+    Change Focus:       tm = await TidyMessage.build(ctx, {escape character}, {error on escape},
+                                                     content={content of first TM},
+                                                     focus={user whose messages are prompts},
+                                                     checks=[{checks}])"""
 
     # Static Fields #
     _t_imgs = dict()    # TidyMode mapped to array of images.

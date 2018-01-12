@@ -43,8 +43,29 @@ async def make_canon(ctx):
         return get_escape(ctx)
     canon = tm.prompt.content.replace(" ", "_")
 
+    # Path syntactical candy.
+    g = str(ctx.guild.id)
+
+    # Check if an RP with this name existed in the past.
+    is_archived = None
+    if os.path.exists(st.ARCHIVES_P.format(g)):
+        archived = os.listdir(st.ARCHIVES_P.format(g))
+        for old in archived:
+            if old.lower() == canon.lower():
+                is_archived = True
+                break
+
+    # If it's archived tell them they can revive the RP, or cancel the command.
+    if is_archived:
+        tm = await tm.rebuild(st.ASK_REVIVE_RP, checks=[check_alias_f(alias.CONFIRM_ALIASES),
+                                                        check_args_f("==", 1)])
+        if tm.prompt.content == get_escape(ctx):
+            return get_escape(ctx)
+        if tm.prompt.content.lower() in alias.DENY:
+            return await tm.rebuild(st.INF_REVIVE_ABORT + " " + st.rand_slack(), req=False)
+
     # Ask for GM.
-    tm = await tm.rebuild(st.REQ_USER_GM,
+    tm = await tm.rebuild(st.INF_REVIVE_A_GO + st.REQ_USER_GM if is_archived else st.REQ_USER_GM,
                           checks=[check_member_f(ctx),
                                   check_args_f("==", 1)])
     if tm.prompt.content == get_escape(ctx):
@@ -55,6 +76,7 @@ async def make_canon(ctx):
 
     # If the GM isn't the maker of the canon, ask them if they want to take on this hell.
     while not have_gm and not borked:
+        # Message the user.
         mem = get_member(ctx, mention=gm)
         if not mem.dm_channel:
             await mem.create_dm()
@@ -62,7 +84,11 @@ async def make_canon(ctx):
                                         dest=mem.dm_channel, member=mem,
                                         checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                                 check_args_f("==", 1)])
-        result = dm_tm.prompt.content
+        if tm.prompt.content == get_escape(ctx):
+            result = alias.DENY[0]
+        else:
+            result = dm_tm.prompt.content
+
         if result.lower() in alias.AFFIRM:
             await dm_tm.rebuild(st.YOUR_FUNERAL, req=False)
             have_gm = True
@@ -78,22 +104,25 @@ async def make_canon(ctx):
     category = await ctx.guild.create_category(canon)
 
     # Path syntactical candy.
-    g = str(ctx.guild.id)
     c = str(category.id)
 
     # Make folder, initial docs and roles.
     if not os.path.exists(st.CANON_P.format(g, c)):
-        # Prepare all directories.
-        if not os.path.exists(st.ARCHIVES_P.format(g, c)):
-            os.makedirs(st.ARCHIVES_P.format(g, c))
-        os.makedirs(st.CHARACTERS_P.format(g, c))
-        os.makedirs(st.C_LOGS_P.format(g, c))
-        os.makedirs(st.META_P.format(g, c))
-        os.makedirs(st.C_PLAYER_PREFS_P.format(g, c))
+        # Prepare all directories if not just taking from the archive.
+        if not is_archived:
+            if not os.path.exists(st.ARCHIVES_P.format(g)):
+                os.makedirs(st.ARCHIVES_P.format(g))
+            os.makedirs(st.CHARACTERS_P.format(g, c))
+            os.makedirs(st.C_LOGS_P.format(g, c))
+            os.makedirs(st.META_P.format(g, c))
+            os.makedirs(st.C_PLAYER_PREFS_P.format(g, c))
 
-        for mem in ctx.guild.members:
-            if not os.path.exists(st.MEM_COMMAND_C_LOGS_P.format(g, c, str(mem.id))):
-                os.makedirs(st.MEM_COMMAND_C_LOGS_P.format(g, c, str(mem.id)))
+            for mem in ctx.guild.members:
+                if not os.path.exists(st.MEM_COMMAND_C_LOGS_P.format(g, c, str(mem.id))):
+                    os.makedirs(st.MEM_COMMAND_C_LOGS_P.format(g, c, str(mem.id)))
+        else:
+            # Move archive data to canon
+            os.rename(st.ARCHIVE_P.format(g, canon.title()), st.CANON_P.format(g, c))
 
         # Make a file to handle the command exceptions
         open(st.EXCEPTIONS_P.format(g, c), "a").close()
@@ -118,7 +147,7 @@ async def make_canon(ctx):
 
         # For each member in the channel, make a file and add them to the proper role.
         for mem in ctx.guild.members:
-            with open(st.C_PLAYER_PREF_P.format(g, c, str(mem.id)), "a") as fout:
+            with open(st.C_PLAYER_PREF_P.format(g, c, str(mem.id)), "w") as fout:
                 if gm == mem.mention:
                     pref = {"user_type": UserType.GM.value, "relevant_character": None}
                     await mem.add_roles(role[2])
@@ -139,7 +168,7 @@ async def make_canon(ctx):
         rw = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
         # Make channels for specific purposes per role.
-        ch = ["_IC", "_OOC", "_command_room", "_rules", "_meta", "_gm_notes"]
+        ch = ["_IC", "_OOC", "_command_room", "_rules", "_meta", "_gm_notes", "_reading_room"]
         ch_dat = dict()
 
         # IC Channel is locked on creation.
@@ -172,8 +201,13 @@ async def make_canon(ctx):
                                                       overwrites={role[0]: n, role[1]: n, role[2]: rw})
         ch_dat[channel.name] = channel.id
 
+        # Reading Room is for everyone to read, but never directly touch.
+        channel = await ctx.guild.create_text_channel(canon + ch[6], category=category,
+                                                      overwrites={role[0]: r, role[1]: r, role[2]: r})
+        ch_dat[channel.name] = channel.id
+
         # Record untouchable instance of data.
-        with open(st.IDS_P.format(g, c), "a") as fout:
+        with open(st.IDS_P.format(g, c), "w") as fout:
             json.dump({"channels": ch_dat, "roles": r_dat}, fout, indent=1)
 
     await tm.rebuild(status + " " + st.rand_slack(), req=False)
@@ -227,20 +261,22 @@ async def delete_canon(ctx):
         # Delete categories and roles in list.
         guild_name = ctx.guild.get_channel(ctx.channel.category_id).name
         with open(st.IDS_P.format(g, c), "r") as fout:
-            ids_json = json.load(fout)
+            ids_json, roles = json.load(fout), list()
             for ch in ctx.guild.channels:
                 if ch.category_id == ctx.channel.category_id and ids_json["channels"].get(ch.name):
                     await ch.delete(reason=st.INF_DELETE_CHANNEL)
             for r in ctx.guild.roles:
+                print(str(ids_json["roles"].get(r.name)) + "\t\t\t\t" + r.name)
                 if ids_json["roles"].get(r.name):
-                    await r.delete(reason=st.INF_DELETE_ROLE)
+                    roles.append(r)
+            for r in roles:
+                await r.delete(reason=st.INF_DELETE_ROLE)
             for ch in ctx.guild.channels:
                 if ch.id == ctx.channel.category_id:
                     await ch.delete()
-                    break
 
         # Move canon data to archive
-        os.rename(st.CANON_P.format(g, c), st.ARCHIVE_P.format(g, guild_name))
+        os.rename(st.CANON_P.format(g, c), st.ARCHIVE_P.format(g, guild_name.title()))
 
     elif no >= majority and yes >= majority or yes < majority and no < majority:
         tm.rebuild(st.ERR_VOTE_FAILED, mode=TidyMode.WARNING)

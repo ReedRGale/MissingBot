@@ -127,6 +127,11 @@ ASK_IF_GM = "Are you really sure you want to do this? Managing an RP is hard and
             "Anyway. What'll it be? Will you be this canon's god (world/RP)?"
 ASK_IF_DELETE = "So, seems the time for this world has come to a close... according to a GM anyway. Do you agree? " \
                 "Yes? No? Nothing in between now, I don't like ambiguity when it comes to these things."
+ASK_REVIVE_RP = "Ah. So my files indicate this RP existed before. So, uh, I'm not gonna overwrite it with your " \
+                "new one. Buuuut... we could bring this back. What'd'ya say?"
+INF_REVIVE_ABORT = "Yeah, yeah, true. There's a reason it was let go, after all. Let sleeping dogs lie. Call me " \
+                   "again if you have a new name for your canon."
+INF_REVIVE_A_GO = "Cool cool. Let's get this reboot started!\n\n"
 
 
 # Error Messages #
@@ -177,7 +182,8 @@ ERR_INVALID_TIDYMODE = "Mr. Programmer, it looks like you gave me a TidyMode I d
                        "And now, some user is probably going 'huh? what's that?' You only have yourself to blame " \
                        "now, Mr. Programmer. After all, you wrote this error code."
 ERR_TOO_FEW_ARGS = "Soooo, I'm looking for a few more arguments than that. Specifically, I'm looking for {} {}."
-ERR_TOO_MANY_ARGS = "Bit overkill there. I'm looking for a little less than that. Specifically, {} {}."
+ERR_TOO_MANY_ARGS = "Bit overkill there. I'm looking for a little less than that. Specifically, {} {}. If you want to" \
+                    " have two words in one arg, surround it with quotation marks like \"this is!\""
 ERR_INEXACT_ARGS = "Noooot exactly. I'm looking for {} arg here. Can you do that?"
 ERR_REPEAT_VAL = "So, you don't repeat variables here. Please. You know the one I'm talking about. " \
                  "'{}.' Don't do that."
@@ -296,7 +302,7 @@ YOUR_FUNERAL = "Your funeral."
 UH = "...I see my name? You called but uh. I don't know what you want me to do. "
 A_SO = "\n\n...back to watching anime."
 B_SO = "Now, time to recalibrate the canons."
-C_SO = "Now, if you'll excuse me, I'm going to toy with your character's stats. Promise I won't change them much. ;>"
+C_SO = "Now, if you'll excuse me, I'm going to toy with character stats. Promise I won't change much. ;>"
 D_SO = "Now buzz off. I've got 'important' things to get to. ...I'm just messing with you, I've got nothing but time."
 E_SO = "But, uh, come back when you have something interesting for me to do, 'kay?"
 F_SO = "Well, another day, another five-billion commands to handle."

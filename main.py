@@ -133,13 +133,13 @@ async def help_command(ctx, *args):
     """Command to simplify referencing the help documents."""
     if args and len(args) == 1:  # If they want help with a specific command...
         try:
-            await TidyMessage.build(ctx, util.get_escape(ctx), content=val.bot.get_command(args[0]).help,
+            await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=val.bot.get_command(args[0]).help,
                                     req=False, mode=TidyMode.STANDARD)
         except discord.ext.commands.errors.CommandInvokeError:
-            await TidyMessage.build(ctx, util.get_escape(ctx), content=st.ERR_WHAT,
+            await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=st.ERR_WHAT,
                                     req=False, mode=TidyMode.WARNING)
     elif args:
-        await TidyMessage.build(ctx, util.get_escape(ctx), content=st.ERR_EXTRA_ARGS.format("one"),
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=st.ERR_EXTRA_ARGS.format("one"),
                                 req=False, mode=TidyMode.STANDARD)
     else:  # Otherwise print out all command briefs.
         # Prepare the string.
@@ -147,7 +147,7 @@ async def help_command(ctx, *args):
         available_commands = val.bot.all_commands
         for name in available_commands:
             help_string += "**" + name + "**" + ":  " + available_commands[name].brief + "\n\n"
-        return await TidyMessage.build(ctx, util.get_escape(ctx), content=help_string,
+        return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=help_string,
                                        req=False, mode=TidyMode.STANDARD)
 
 
