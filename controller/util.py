@@ -34,7 +34,7 @@ async def escape_setter(ctx):
     await tm.rebuild(st.INF_ESCAPE_SET.format(tm.prompt.content) + " " + st.rand_slack())
 
 
-async def make_canon(ctx):
+async def new_canon(ctx):
     """Makes a canon folder and files."""
     # Ask for RP name
     tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_CANON,
@@ -266,7 +266,6 @@ async def delete_canon(ctx):
                 if ch.category_id == ctx.channel.category_id and ids_json["channels"].get(ch.name):
                     await ch.delete(reason=st.INF_DELETE_CHANNEL)
             for r in ctx.guild.roles:
-                print(str(ids_json["roles"].get(r.name)) + "\t\t\t\t" + r.name)
                 if ids_json["roles"].get(r.name):
                     roles.append(r)
             for r in roles:
@@ -282,201 +281,6 @@ async def delete_canon(ctx):
         tm.rebuild(st.ERR_VOTE_FAILED, mode=TidyMode.WARNING)
     else:
         tm.rebuild(st.INF_DENIED_DELETE)
-
-
-async def add_character(ctx):
-    """A function to store a JSON entry of a character"""
-    # Initialize a tm.
-    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE)
-
-    # By default, the author of the character is the caller.
-    author = tm.prompt.author
-
-    # GMs can assign users characters.
-    caller_is_gm = get_user_type(ctx.message.author, ctx.channel) == UserType.GM
-
-    if caller_is_gm:
-        # Ask which player this is for.
-        player_undecided, again = True, False
-
-        while player_undecided:
-            tm = await tm.rebuild(st.REQ_PLAYER if not again else again + " " + st.REQ_PLAYER,
-                                  checks=[check_invalid_f(val.WHITESPACE)])
-            if tm == get_escape(ctx):
-                return get_escape(ctx)
-
-            # Convert mention to member instance.
-            player = get_member(ctx, mention=tm.prompt.content)
-
-            # Check if player exists/isn't an observer
-            if player is None:
-                again = st.ERR_NOT_IN_GUILD + " " + st.ERR_REPEAT_1
-            if get_user_type(ctx, player, ctx.channel) == UserType.OBSERVER.value:
-                again = st.ERR_NOT_IN_RP + " " + st.ERR_REPEAT_2
-            else:
-                # Now we know to associate the character with this player.
-                author = player
-                player_undecided = False
-
-    character_stats = ["NAME", "ATHLETICS", "CHARISMA", "DEXTERITY", "ACADEMICS", "SAVVY"]
-
-    # Ask for stat values.
-    for field in character_stats:
-        # Prime the pump.
-        input_not_recorded, repeat = True, ""
-        while input_not_recorded:
-            # Ask user for a field.
-            tm = await tm.rebuild(repeat + st.REQ_CHARACTER.format(field),
-                                  checks=[check_args_f("==", 1)])
-            if tm == get_escape(ctx):
-                return get_escape(ctx)
-            # List of checks to make sure their input makes sense.
-            if field == "NAME":
-                # Store the name of the character.
-                character = get_character_json(tm.prompt.content, ctx.channel)
-                if character != {}:
-                    repeat = st.ERR_PLAYER_EXIST
-                else:
-                    # Set initial fields.
-                    character["PLAYER"] = author.id
-                    character[field] = tm.prompt.content
-                    input_not_recorded = False
-            elif calc.is_int(tm.prompt.content):
-                stat_val = int(tm.prompt.content)
-                if not stat_val > -1:  # Inform the user that -1 or less might be a bit low.
-                    repeat = st.ERR_STAT_LT_ZERO + " "
-                elif not stat_val < 15:  # Inform the user that 16 or more is too high.
-                    repeat = st.ERR_STAT_GT_FIFT + " "
-                else:  # User got it right, make sure to break this loop.
-                    character[field] = tm.prompt.content
-                    input_not_recorded = False
-            else:
-                repeat = st.ERR_INV_FORM + " "
-
-    # Path syntactical candy.
-    g = str(ctx.guild.id)
-    c = str(ctx.channel.category_id)
-
-    # Update character file.
-    with open(st.CHARACTER_P.format(g, c, character["NAME"]), "w") as fout:
-        json.dump(character, fout, indent=1)
-
-    # Update player prefs.
-    prefs = get_prefs(author, ctx.channel)
-    prefs["relevant_character"] = character["NAME"]
-    with open(st.C_PLAYER_PREF_P.format(g, c, str(author.id)), "w") as fout:
-        json.dump(prefs, fout, indent=1)
-
-    # Confirm that the data is saved.
-    await tm.rebuild(st.SAVED + " " + st.rand_slack())
-
-
-async def get_characters(ctx):
-    """Returns all characters in a tidy list."""
-    # Check if this makes sense at all.
-    if not get_canon(ctx):
-        return TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, req=False, content=st.ERR_NOT_IN_CANON,
-                                 mode=TidyMode.WARNING)
-
-    # Path syntactical candy.
-    g = str(ctx.guild.id)
-    c = str(ctx.channel.category_id)
-
-    # Load in file.
-    c_names, c_json = os.listdir(st.CHARACTERS_P.format(g, c)), {}
-    for ch in c_names:
-        with open(st.CHARACTER_P.format(g, c, ch), "r") as fout:
-            c_json[ch] = json.load(fout)
-
-    # Concatenate all names.
-    all_names = "Character Names: \n"
-
-    for key in c_names:
-        all_names += '~ ' + c_json[key]["NAME"] + '\n'
-
-    return await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, req=False, content=all_names)
-
-
-async def perform_skill_roll(ctx):
-    """Performs a basic skill roll."""
-    #  ASK FOR BASIC INFO  #
-    # Request roll purpose.
-    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_ROLL_PURPOSE)
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
-    purpose = tm.prompt.content
-
-    # Find the related character.
-    tm = await tm.rebuild(st.REQ_ACTIVE_CHARACTER,
-                          checks=[check_args_f("==", 1)])
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
-    character = get_character_json(tm.prompt.content, ctx.channel)
-
-    # Request stats for roll.
-    tm = await tm.rebuild(st.REQ_STATS,
-                          checks=[check_alias_f(alias.STATS_ALIASES, no_dups=True),
-                                  check_args_f("<=", 2)])
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
-    stats = shlex.split(tm.prompt.content)
-
-    #  ASK FOR MODS  #
-    # Define Lists
-    mod_r, mod_v = [], []  # Reasons, Values
-
-    # Ask for confirmation on modifiers.
-    tm = await tm.rebuild(st.ASK_IF_MODS,
-                          checks=[check_alias_f(alias.CONFIRM_ALIASES),
-                                  check_args_f("==", 1)])
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
-    confirm = tm.prompt.content
-
-    # Check confirm status.
-    while confirm.lower() in alias.AFFIRM:
-        # Request mod reason.
-        tm = await tm.rebuild(st.REQ_MOD_REASON)
-        if tm.prompt.content == get_escape(ctx):
-            return get_escape(ctx)
-        mod_r.append(tm.prompt.content)
-
-        # Request mod amount.
-        tm = await tm.rebuild(st.REQ_MOD_AMOUNT,
-                              checks=[check_args_f("==", 1),
-                                      check_int])
-        if tm.prompt.content == get_escape(ctx):
-            return get_escape(ctx)
-
-        mod_v.append(tm.prompt.content)
-
-        # Ask if more mods.
-        tm = await tm.rebuild(st.ASK_IF_MORE_MODS,
-                              checks=[check_alias_f(alias.CONFIRM_ALIASES),
-                                      check_args_f("==", 1)])
-        if tm == get_escape(ctx):
-            return get_escape(ctx)
-        confirm = tm.prompt.content
-
-    #  COMPLETE THE ROLL  #
-    norm_stat_types, dice_pool = [], 0
-
-    # Collect roll information.
-    for stat in stats:
-        norm_stat_types.append(redeem_alias(stat, alias.STATS_ALIASES))
-    for stat in norm_stat_types:
-        dice_pool += int(character[stat])
-    base_pool = dice_pool
-    for mod in mod_v:
-        dice_pool += int(mod)
-
-    # Roll the die and make the string.
-    successes = calc.skill_roll(dice_pool)
-    final_string = st.skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose,
-                                        norm_stat_types, stats, successes)
-
-    # Print the final string.
-    await tm.rebuild("Here it is. Go wild. \n\n" + final_string)
 
 
 async def new_combat(ctx):
@@ -633,7 +437,7 @@ async def wait_for_affirmation(ctx, channel, member, content):
 def check_perms(ctx, command=""):
     """Provides information about command relative to the member calling the command."""
     # Collect the command name.
-    command = command if command else ctx.command.name
+    command = command if command else ctx.command.full_parent_name + " " + ctx.command.name
 
     if get_canon(ctx) and val.perms[command]:
         # Check role of player against those allowed to call command.

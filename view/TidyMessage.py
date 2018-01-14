@@ -8,7 +8,6 @@ import shlex
 import os
 import time
 import uuid
-from pprint import pprint
 from asyncio import tasks
 from view.TidySecretary import TidySecretary
 from model import st
@@ -244,9 +243,6 @@ class TidyMessage:
                            TidyMessage._next_g,
                            TidyMessage._first_g]
 
-        print("\n_pending before adding tasks: ")
-        pprint(TidyMessage._pending.get(self.ctx.author.id))
-
         # For each potential task, check if it generates a task we need to do.
         todo, uid = list(), str(uuid.uuid4())
         for t in potential_tasks:
@@ -262,9 +258,6 @@ class TidyMessage:
         for t in todo:
             TidyMessage._pending.get(self.ctx.author.id).add(asyncio.ensure_future(t()))
             time.sleep(0.05)
-
-        print("\n_pending after adding tasks: ")
-        pprint(TidyMessage._pending.get(self.ctx.author.id))
 
         # Add the uid to the task.
         for t in TidyMessage._pending.get(self.ctx.author.id):
@@ -307,9 +300,6 @@ class TidyMessage:
 
                 # Unlock, remove task and use information to determine exit point.
                 TidyMessage._pending.get(tm.ctx.author.id).remove(d)
-
-            print("\n_pending after cancellations: ")
-            pprint(TidyMessage._pending.get(tm.ctx.author.id))
 
             if hasattr(tm, "_child_not_caller") and tm._child_not_caller:
                 break

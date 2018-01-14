@@ -30,12 +30,14 @@ def call_command(command):
     """Decorator that takes a command, updates the bot's guild state and wraps it in checks.
     If it fails any of the checks, it'll route it to the proper exit."""
 
-    async def checks(*args):
+    async def call(*args):
         # Retrieve context.
         ctx = args[0]
 
-        # Check if the command is overruled.
+        # Update the guild state.
         await update_guild(ctx)
+
+        # Check if the command is overruled.
         overruled = util.check_perms(ctx)
 
         # Check if a command has already been called by this user.
@@ -48,7 +50,7 @@ def call_command(command):
 
         # Unlock command functionality.
         val.calling[ctx.message.author.id] = False
-    return checks
+    return call
 
 
 # Events #
@@ -112,21 +114,22 @@ async def on_ready():
     TidyMessage.set_url(val.GITHUB_URL)
 
     # Load in Permissions for Users
-    val.perms["newcanon"] = ()
-    val.perms["deletecanon"] = (UserType.GM.value,)
-    val.perms["newcharacter"] = (UserType.GM.value,)
-    val.perms["listcharacters"] = (UserType.GM.value, UserType.PLAYER.value, UserType.OBSERVER.value)
+    val.perms["new canon"] = ()
+    val.perms["delete canon"] = (UserType.GM.value,)
+    val.perms["new character"] = (UserType.GM.value,)
+    val.perms["list characters"] = (UserType.GM.value, UserType.PLAYER.value, UserType.OBSERVER.value)
     val.perms["skillroll"] = (UserType.GM.value, UserType.PLAYER.value, UserType.OBSERVER.value)
-    val.perms["newcombat"] = (UserType.GM.value, UserType.PLAYER.value)
+    val.perms["new combat"] = (UserType.GM.value, UserType.PLAYER.value)
     val.perms["forecast"] = (UserType.GM.value, UserType.PLAYER.value, UserType.OBSERVER.value)
     val.perms["help"] = ()
-    val.perms["setescape"] = ()
+    val.perms["set escape"] = ()
     val.perms["debug"] = ()
 
 
 # Commands #
 
 
+# TODO: Probably update this.
 @val.bot.command(name="help", help=st.HP_HELP, brief=st.HP_BRIEF)
 @call_command
 async def help_command(ctx, *args):
@@ -151,51 +154,69 @@ async def help_command(ctx, *args):
                                        req=False, mode=TidyMode.STANDARD)
 
 
-@val.bot.command(name="setescape", help=st.SE_HELP, brief=st.SE_BRIEF)
-@call_command
-async def set_escape(ctx):
-    return await util.escape_setter(ctx)
+#  NEW COMMANDS  #
 
 
-@val.bot.command(name="newcanon", help=st.NN_HELP, brief=st.NN_BRIEF)
+@val.bot.group(name="new")
+async def new(ctx):
+    """Group of commands designated to create things."""
+    if ctx.invoked_subcommand is None:
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                                content=st.ERR_NEW_WHAT, mode=TidyMode.WARNING)
+
+
+@new.command(name="canon", help=st.NN_HELP, brief=st.NN_BRIEF)
 @call_command
 async def new_canon(ctx):
     """Makes a new canon, including folders and player prefs."""
-    return await util.make_canon(ctx)
+    return await util.new_canon(ctx)
 
 
-@val.bot.command(name="deletecanon", help=st.DN_HELP, brief=st.DN_BRIEF)
+@new.command(name="combat", help=st.NT_HELP, brief=st.NT_BRIEF)
+@call_command
+async def new_combat(ctx):
+    return await util.new_combat(ctx.message)
+
+
+#  DELETE COMMANDS  #
+
+
+@val.bot.group(name="delete")
+async def delete(ctx):
+    """Group of commands designated to remove things."""
+    if ctx.invoked_subcommand is None:
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                                content=st.ERR_DELETE_WHAT, mode=TidyMode.WARNING)
+
+
+@delete.command(name="canon", help=st.DN_HELP, brief=st.DN_BRIEF)
 @call_command
 async def delete_canon(ctx):
     """Deletes a canon, though preserves folders and player prefs."""
     return await util.delete_canon(ctx)
 
 
-@val.bot.command(name="newcharacter", help=st.NR_HELP, brief=st.NR_BRIEF)
+#  EDIT COMMANDS  #
+
+
+@val.bot.group(name="edit")
+async def edit(ctx):
+    """Group of commands designated to edit data."""
+    if ctx.invoked_subcommand is None:
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                                content=st.ERR_EDIT_WHAT, mode=TidyMode.WARNING)
+
+
+@edit.command(name="escape", help=st.SE_HELP, brief=st.SE_BRIEF)
 @call_command
-async def new_character(ctx):
-    return await util.add_character(ctx)
+async def set_escape(ctx):
+    return await util.escape_setter(ctx)
 
 
-@val.bot.command(name="listcharacters", help=st.LR_HELP, brief=st.LR_BRIEF)
-@call_command
-async def list_characters(ctx):
-    return await util.get_characters(ctx)
+# DEBUG COMMANDS  #
 
 
-@val.bot.command(name="skillroll", help=st.SL_HELP, brief=st.SL_BRIEF)
-@call_command
-async def skill_roll(ctx):
-    return await util.perform_skill_roll(ctx)
-
-
-@val.bot.command(name="newcombat", help=st.NT_HELP, brief=st.NT_BRIEF)
-@call_command
-async def new_combat(ctx):
-    return await util.new_combat(ctx.message)
-
-
-@val.bot.command(name="debug", help=st.DB_HELP, brief=st.DB_BRIEF)
+@val.bot.group(name="debug", help=st.DB_HELP, brief=st.DB_BRIEF)
 @call_command
 async def debug(ctx):
     """Command to test things."""
@@ -208,10 +229,11 @@ async def debug(ctx):
     # With some serious finagling, you can link and create a channel and a category.
     # Worked out TidyMessage kinks.
     # When ensure_future is called, all coros are called!
-    print("You're in.")
+    print("Not testing anything...")
 
 
-# Helper functions
+#  Helper Functions  #
+
 
 async def update_guild(ctx):
     # On startup, check the general player_prefs and update them.
@@ -220,28 +242,32 @@ async def update_guild(ctx):
     # Path syntactical candy.
     g = str(ctx.guild.id)
 
-    # Only do this if the path exists already.
+    # For each canon, if it exists, make sure of the player_prefs and roles.
     if os.path.exists(st.CANONS_P.format(g)):
         canon_names = os.listdir(st.CANONS_P.format(g))
-
-        # For each canon, make sure of the player_prefs and roles.
         for mem in ctx.guild.members:
-            for canon in canon_names:
-                if canon != st.ARCHIVES_FN:
-                    if not st.C_PLAYER_PREF_P.format(g, canon, mem.id):
-                        # Set up the individual's player prefs.
-                        open(st.C_PLAYER_PREF_P.format(g, canon, mem.id), "a").close()
-                        with open(st.C_PLAYER_PREF_P.format(g, canon, mem.id), "w") as fout:
+            for c in canon_names:
+                if c != st.ARCHIVES_FN:  # Ignore _archives folder...
+                    if not st.C_PLAYER_PREF_P.format(g, c, mem.id):  # If player_pref not found...
+                        open(st.C_PLAYER_PREF_P.format(g, c, mem.id), "a").close()
+                        with open(st.C_PLAYER_PREF_P.format(g, c, mem.id), "w") as fout:
                             pref = {"user_type": UserType.OBSERVER.value, "relevant_character": None}
                             json.dump(pref, fout, indent=1)
-
-                        # Set up the player's roles.
-                        with open(st.ROLES_P.format(g, canon), "r") as fin:
+                        with open(st.ROLES_P.format(g, c), "r") as fin:
                             role_id = json.load(fin)[str(UserType.OBSERVER)]
                             for r in mem.guild.roles:
                                 if role_id == r.id:
                                     role = r
                             await mem.add_roles(role)
+                    for role in mem.roles:
+                        with open(st.ROLES_P.format(g, c), "r") as fin:
+                            c_roles = json.load(fin)
+                            if role.id in c_roles.values():  # If role is canon role...
+                                # If role isn't the role in their prefs...
+                                u_type = util.get_user_type(mem, val.bot.get_channel(int(c)).channels[0])
+                                if c_roles[UserType(u_type).name] != role.id:
+                                    await role.delete(reason="You can't have multiple roles in a canon!!")
+
 
 # Code #
 
