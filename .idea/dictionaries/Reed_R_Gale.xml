@@ -3,6 +3,7 @@
     <words>
       <w>agains</w>
       <w>borked</w>
+      <w>chnl</w>
       <w>coro</w>
       <w>deletecanon</w>
       <w>dest</w>
@@ -10,8 +11,11 @@
       <w>fift</w>
       <w>formatters</w>
       <w>fout</w>
+      <w>frmt</w>
       <w>gamemaster</w>
+      <w>groupless</w>
       <w>imgs</w>
+      <w>itlc</w>
       <w>listcharacters</w>
       <w>mems</w>
       <w>newcanon</w>
@@ -26,6 +30,7 @@
       <w>skillroll</w>
       <w>snowflakifier</w>
       <w>unfound</w>
+      <w>utype</w>
       <w>vals</w>
     </words>
   </dictionary>

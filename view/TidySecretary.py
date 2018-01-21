@@ -30,12 +30,12 @@ class TidySecretary:
             page = str(int(max(all_m_json, key=int)) + 1) if all_m_json else '0'
 
         # Convert TidyMessage to json, then add it to all the other entries.
-        m_json = {st.CONTENT_ARG: tm.message.embeds[0].description if not prompt else tm.prompt.content,
-                  st.TITLE_ARG: tm.title,
-                  st.MODE_ARG: tm.mode,
-                  st.PAGE_ARG: page,
-                  st.PATH_ARG: tm.path,
-                  st.EDITABLE_ARG: tm.editable}
+        m_json = {st.FLD_CNTT: tm.message.embeds[0].description if not prompt else tm.prompt.content,
+                  st.FLD_TTLE: tm.title,
+                  st.FLD_MODE: tm.mode,
+                  st.FLD_PAGE: page,
+                  st.FLD_PATH: tm.path,
+                  st.FLD_EDTBL: tm.editable}
         all_m_json[page] = m_json
 
         # Send the data to the proper location.

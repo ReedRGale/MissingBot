@@ -7,30 +7,52 @@
 
 import random
 
+# Misc
 
-# Informative Messages #
-
-
-INF_DONE = "The thing you asked for should be done now."
-INF_NAUGHT = "Nothing to see here."
-INF_BROKEN = "I know. It's broken. I'll get to it when I get to it."
-INF_CHANNELS_MADE = "Alright bud, I think things are set in place. Your private combat channel is made " \
-                    "and should be called: "
-INF_CANON_MADE = "All the paperwork is in order. Enjoy the new world, I guess."
-INF_CANON_SET = "Well, here you are. Enjoy your stay or something."
-INF_NOT_GM = "Wise choice. I'll let that jerk know you don't want any part of this nonsense."
-INF_DENIED_GM = "They made the smart choice and chose not to be GM. Call me again when you have someone for the job."
-INF_DENIED_DELETE = "Seems people still like this world. At the very least, the vote failed. The show goes on, for now."
-INF_DELETE_CHANNEL = "I zorked this because I was told to by the GM and the players voted for it."
-INF_DELETE_ROLE = "I blanged this because I was told to by the GM and the players agreed."
-INF_ESCAPE_SET = "Your new escape value is {}. Use it wisely."
-INF_MESSAGING_D = "I'll get the word out, then. I guess it's time to see if this canon gets to live."
-
-SAVED = "Databank updated, for whatever reason it needed updating!"
-ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
+KEYWORDS = dict()
 
 
 # Help Messages #
+
+
+HELP_BRIEF = "This is the command you're calling right now. Woohoo."
+HELP_HELP = "Alright, I assume you're here because it was in the main command. Here's the skinny, and I'll try to " \
+            "keep it short and sweet. Commands are put in groups. Those groups of commands can have groups. " \
+            "Ya follow me so far? Cool. \n\nSo when you call 'help' you should denote all the groups that own " \
+            "that command. I know that might sound weird, so let me give you and example, 'kay? \n\n" \
+            "So, if you wanted to know about the command '~dd new canon,' you should call '~dd help new canon' " \
+            "instead of '~dd help canon' because without knowing it's for a 'new' canon, I can't know " \
+            "for sure what you're talking about. Basically, just call it like you would normally but " \
+            "instead preface it with '~dd help' instead of just '~dd'. \n\nPretty intuitive, " \
+            "right? Also, if there are important keywords defined by your GM, I store them under the help command as " \
+            "well. I don't give the author to use groups though, so to call a keyword, definition it's just '~dd " \
+            "<keyword>. Simple enough, I think. Now you know how to ask me for something specific, so you should be " \
+            "ready to use my features. Play nice with me. ^_- ~~✦"
+
+NEW_BRIEF = "This is for commands that create something."
+NEW_HELP = "A lot of commands are going to end up having me make stuff. That is, they'll have me _do work._ Snore. " \
+           "But in general, with this kind of work, I'll be recording new information, making channels, roles, " \
+           "permissions, character logs, rules... the works. \n\nDon't work me too hard, yeah? ;u;"
+
+DLTE_BRIEF = "A group of commands where I break shit. Gracefully."
+DLTE_HELP = "You call a delete command, and I'm going to be ~~tearing up records with gleeful abandon~~ carefully " \
+            "and neatly ascertain the data that needs to be deleted based off your command. Usually there some sort " \
+            "of failsafe to stop you from accidentally deleting something, but I wouldn't rely on that necessarily. " \
+            "There's something nice about the carnal desire to destroy what's been created, after all."
+
+EDIT_BRIEF = "A group of commands for modifications."
+EDIT_HELP = "You tell me to change a thing. I change the thing. Kinda just depends on the thing I'm changing. Shrug. " \
+            "I dunno what you want me to tell you--there isn't much more to it than the brief. It's cute that you're " \
+            "spending time to hear all the things I have to say though. ^_^"
+
+GET_BRIEF = "A group of commands for retrieving information."
+GET_HELP = "Hehehe, the name for the string this is stored in is called 'GET_HELP'. Uh. Anyway. These commands are " \
+           "designated for retrieving some type of information depending on the child command. This could include " \
+           "information about your character's stats, inventory, metadata about your canon... lots of things."
+
+
+# OLD Help Messages #
+
 
 NN_BRIEF = "'NewCanon' is a command to kick off a new RP."
 NN_HELP = "To Call: '~dd newcanon'\n\n" \
@@ -44,7 +66,7 @@ NN_HELP = "To Call: '~dd newcanon'\n\n" \
 DN_BRIEF = "'DeleteCanon' is a command to delete an RP and its associated channels and roles."
 DN_HELP = "To Call: '~dd newcanon'\n\n" \
           "Call within the canon to ask all players if the canon should be deleted and the RP ended... " \
-          "for the time being. If the vote goes through, I delete the channels, category and roles. I do, however," \
+          "for the time being. If the vote goes through, I delete the channels, category and roles. I do, however, " \
           "hold onto player prefs, character stats, locations and other useful data that was generated through the" \
           "course of the RP. Just in case, you know. If you call newcanon with the same name as deleted canon," \
           "I will automatically link the data from the previous RP up with the newly created one. You're welcome."
@@ -91,6 +113,37 @@ DB_BRIEF = "'Debug' is a command that helps me test things. Don't worry about it
 DB_HELP = "If I set this up properly, how did you ever get here...? Are you on my account? Spoopy."
 
 
+# Informative Messages #
+
+
+INF_DONE = "The thing you asked for should be done now."
+INF_NAUGHT = "Nothing to see here."
+INF_BROKEN = "I know. It's broken. I'll get to it when I get to it."
+INF_CHANNELS_MADE = "Alright bud, I think things are set in place. Your private combat channel is made " \
+                    "and should be called: "
+INF_CANON_MADE = "All the paperwork is in order. Enjoy the new world, I guess."
+INF_CANON_SET = "Well, here you are. Enjoy your stay or something."
+INF_NOT_GM = "Wise choice. I'll let that jerk know you don't want any part of this nonsense."
+INF_DENIED_GM = "They made the smart choice and chose not to be GM. Call me again when you have someone for the job."
+INF_DENIED_DELETE = "Seems people still like this world. At the very least, the vote failed. The show goes on, for now."
+INF_DELETE_CHANNEL = "I zorked this because I was told to by the GM and the players voted for it."
+INF_DELETE_ROLE = "I blanged this because I was told to by the GM and the players agreed."
+INF_ESCAPE_SET = "Your new escape value is {}. Use it wisely."
+INF_MESSAGING_D = "I'll get the word out, then. I guess it's time to see if this canon gets to live."
+INF_REVIVE_ABORT = "Yeah, yeah, true. There's a reason it was let go, after all. Let sleeping dogs lie. Call me " \
+                   "again if you have a new name for your canon."
+INF_REVIVE_A_GO = "Cool cool. Let's get this reboot started!\n\n"
+INF_COMMAND_GROUP = "Here's everything I know about this group of commands: \n\n"
+INF_HELP = "Here's what I know about '{}:' \n\n{}"
+INF_TOP_LEVEL_COMMANDS = "Here's all the major command types. If you want to delve them further, " \
+                         "I've left more on calling specific types, call '~dd help help'. Thank.\n\n"
+INF_GROUP = "<Command-Group>"
+INF_COMMAND = "<Command>"
+
+SAVED = "Databank updated, for whatever reason it needed updating!"
+ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
+
+
 # Request Messages #
 
 
@@ -129,9 +182,6 @@ ASK_IF_DELETE = "So, seems the time for this world has come to a close... accord
                 "Yes? No? Nothing in between now, I don't like ambiguity when it comes to these things."
 ASK_REVIVE_RP = "Ah. So my files indicate this RP existed before. So, uh, I'm not gonna overwrite it with your " \
                 "new one. Buuuut... we could bring this back. What'd'ya say?"
-INF_REVIVE_ABORT = "Yeah, yeah, true. There's a reason it was let go, after all. Let sleeping dogs lie. Call me " \
-                   "again if you have a new name for your canon."
-INF_REVIVE_A_GO = "Cool cool. Let's get this reboot started!\n\n"
 
 
 # Error Messages #
@@ -146,7 +196,7 @@ ERR_PLAYER_EXIST = "Yo. So... uh... don't try to like... take this character's i
                    "Let 'em be."
 ERR_NOT_INT = "Hey so, this is looking for numerical integer data. In layman's term's, that's numbers without the " \
               "'.' in them. i.e 1, 2, 3 and not 3.4, 1.23, etc. So anyway. Try again."
-ERR_MEMBER_NONEXIST = "Hey, so... seems that the 'member' {} isn't in this server. Maybe try again, yeah?"
+ERR_MEMBER_NONEXIST = "Hey, so... seems that the member '{}' isn't in this server. Maybe try again, yeah?"
 ERR_PLAYER_NONEXIST = "Yo. So... uh... I don't know how to put this nicely. But... that player doesn't... exist? Yeah."
 ERR_CANON_NONEXIST = "Okay so... these worlds aren't real, but this one exists less than the other " \
                      "worlds that don't exist. That is, I don't have it in my records."
@@ -184,21 +234,17 @@ ERR_INVALID_TIDYMODE = "Mr. Programmer, it looks like you gave me a TidyMode I d
 ERR_TOO_FEW_ARGS = "Soooo, I'm looking for a few more arguments than that. Specifically, I'm looking for {} {}."
 ERR_TOO_MANY_ARGS = "Bit overkill there. I'm looking for a little less than that. Specifically, {} {}. If you want to" \
                     " have two words in one arg, surround it with quotation marks like \"this is!\""
-ERR_INEXACT_ARGS = "Noooot exactly. I'm looking for {} arg here. Can you do that?"
+ERR_INEXACT_ARGS = "Noooot exactly. I'm looking for '{}' arg here. Can you do that?"
 ERR_REPEAT_VAL = "So, you don't repeat variables here. Please. You know the one I'm talking about. " \
                  "'{}.' Don't do that."
-ERR_NOT_IN_ALIAS = "I don't know the word {} in this context. Maybe try again?"
-
-
-# Args #
-
-ESCAPE_ARG = "escape"
-PAGE_ARG = "page"
-TITLE_ARG = "title"
-CONTENT_ARG = "content"
-MODE_ARG = "mode"
-PATH_ARG = "path"
-EDITABLE_ARG = "editable"
+ERR_NOT_IN_ALIAS = "I don't know the word '{}' in this context. Maybe try again?"
+ERR_NO_SUCH_CHILD = "Uhh, the command '{}' doesn't have a child command called '{}.'"
+ERR_NO_SUCH_TYPE = "So, I looked, and I don't have any command in my database called '{}.' Not under '{}' anyway. " \
+                   "Sorry fam."
+ERR_NO_SUCH_KEYWORD = "Sadly, I can't find a keyword in your canon called '{}.' Them's the breaks."
+ERR_DELETE_WHAT = "...delete what now?"
+ERR_HELP_WHAT = "...sorry I can't help with nonsense."
+ERR_DUP_ROLES = "You can't have multiple roles in a canon!!"
 
 
 # File Names #
@@ -212,11 +258,69 @@ CHARACTERS_FN = "characters"
 META_FN = "meta"
 LOGS_FN = "logs"
 CANONS_FN = "canons"
+COMMANDS_FN = "commands"
 PLAYER_PREFS_FN = "player_prefs"
 ROLES_FN = "roles.json"
 EXCEPTIONS_FN = "command_exceptions.json"
-COMMANDS_FN = "commands"
 IDS_FN = "canon_ids.json"
+
+
+# Canon Channels #
+
+
+CHNL_INTRO = "_intro"
+CHNL_IC = "_IC"
+CHNL_OOC = "_OOC"
+CHNL_COMM = "_command_room"
+CHNL_RULE = "_rules"
+CHNL_META = "_meta"
+CHNL_NOTE = "_gm_notes"
+CHNL_READ = "_archive"
+CHNL_ALL = [CHNL_INTRO, CHNL_IC, CHNL_OOC, CHNL_COMM, CHNL_RULE, CHNL_META, CHNL_NOTE, CHNL_READ]
+
+
+# JSON Fields #
+
+
+FLD_ESC = "escape"
+FLD_PAGE = "page"
+FLD_TTLE = "title"
+FLD_CNTT = "content"
+FLD_MODE = "mode"
+FLD_PATH = "path"
+FLD_EDTBL = "editable"
+FLD_UTYPE = "user_type"
+FLD_RCHAR = "relevant_character"
+FLD_CHNL = "channels"
+FLD_ROLE = "roles"
+
+
+# Comparison Modes #
+
+MODE_GT = ">"
+MODE_GTE = ">="
+MODE_LT = "<"
+MODE_LTE = "<="
+MODE_EQ = "=="
+
+# Command Names #
+
+
+COMM_HELP = "help"
+COMM_DEBUG = "debug"
+COMM_NEW = "new"
+COMM_CANON = "canon"
+COMM_DEL = "delete"
+COMM_EDT = "edit"
+COMM_ESC = "escape"
+COMM_COMBAT = "combat"
+
+FULL_HELP = "_" + COMM_HELP
+FULL_DEBUG = "_" + COMM_DEBUG
+FULL_NEW_CAN = "_".join([COMM_NEW, COMM_CANON])
+FULL_NEW_COM = "_".join([COMM_NEW, COMM_COMBAT])
+FULL_DEL_CAN = "_".join([COMM_DEL, COMM_CANON])
+FULL_EDT_ESC = "_".join([COMM_EDT, COMM_ESC])
 
 
 # File Paths #
@@ -251,13 +355,22 @@ MEM_COMMAND_G_LOG_P = MEM_COMMAND_G_LOGS_P + "\\{}.json"    # Guild ID, Member I
 
 # Other #
 
-
 SUCCESS = "S - "
 FAILURE = "F - "
 AGAIN = "A - "
 
 
 # Methods #
+
+
+def bold(frmt):
+    """Formats a string into a bold string"""
+    return "**" + frmt + "**"
+
+
+def itlc(frmt):
+    """Formats a string into a italicized string"""
+    return "_" + frmt + "_"
 
 
 def skill_roll_string(mod_r, mod_v, dice_pool, base_pool, purpose, norm_stat_types, stats, successes):
@@ -299,7 +412,7 @@ def rand_slack():
 
 
 YOUR_FUNERAL = "Your funeral."
-UH = "...I see my name? You called but uh. I don't know what you want me to do. "
+UH = "...I see my name? You called but uh. I don't know what you want me to do."
 A_SO = "\n\n...back to watching anime."
 B_SO = "Now, time to recalibrate the canons."
 C_SO = "Now, if you'll excuse me, I'm going to toy with character stats. Promise I won't change much. ;>"
@@ -307,4 +420,9 @@ D_SO = "Now buzz off. I've got 'important' things to get to. ...I'm just messing
 E_SO = "But, uh, come back when you have something interesting for me to do, 'kay?"
 F_SO = "Well, another day, another five-billion commands to handle."
 G_SO = "\n\n...man, I live the good life. Underworked and overpaid. Just how I like it."
-ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO]
+H_SO = "Okidoke. Seems like my work here is done."
+I_SO = "Glad that's over. Now where was I on that cosplay..."
+J_SO = "Was that it? Couldn't you have done that yourself? \n\nHaha, just kidding. I know ya'll are just _helpless_ " \
+       " without me. ;>"
+K_SO = "Yawn."
+ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO, H_SO, I_SO, J_SO, K_SO]

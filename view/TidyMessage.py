@@ -79,11 +79,11 @@ class TidyMessage:
         if kwargs.get("path"):      # If information already exists pull up the log.
             log = await TidySecretary.retrieve(kwargs.get("path"))
             return await tm.rebuild(req=req,
-                                    content=log.get(st.CONTENT_ARG),
-                                    title=log.get(st.TITLE_ARG),
-                                    mode=log.get(st.MODE_ARG),
-                                    page=log.get(st.PAGE_ARG),
-                                    editable=log.get(st.EDITABLE_ARG),
+                                    content=log.get(st.FLD_CNTT),
+                                    title=log.get(st.FLD_TTLE),
+                                    mode=log.get(st.FLD_MODE),
+                                    page=log.get(st.FLD_PAGE),
+                                    editable=log.get(st.FLD_EDTBL),
                                     **kwargs)
         if kwargs.get("content"):   # If information doesn't already exist, log it.
             # Prepare data.
@@ -407,7 +407,7 @@ class TidyMessage:
             prev_page = int(tm.page) - 1
         else:
             curr_page = await TidySecretary.retrieve(tm.path)
-            prev_page = int(curr_page.get(st.PAGE_ARG)) - 1
+            prev_page = int(curr_page.get(st.FLD_PAGE)) - 1
 
         if prev_page >= 0:
             async def prev():
@@ -427,9 +427,9 @@ class TidyMessage:
                 # Once this is the reaction we're looking for, rebuild the page.
                 history = await TidySecretary.retrieve(tm.path, whole=True)
                 page = history[str(int(tm.page) - 1)] if tm.page else history[str(prev_page)]
-                tc = await tc.rebuild(page.get(st.CONTENT_ARG), title=page.get(st.TITLE_ARG),
-                                      mode=page.get(st.MODE_ARG), page=page.get(st.PAGE_ARG),
-                                      path=page.get(st.PATH_ARG), editable=page.get(st.EDITABLE_ARG),
+                tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
+                                      mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
+                                      path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
                                       req=tm.req, req_c=tm.req_c, checks=tm.checks,
                                       caller=prev.__name__ + uid)
                 return tc
@@ -446,7 +446,7 @@ class TidyMessage:
         next_page = None
         if tm.page:
             next_page = int(tm.page) + 1
-        top_page = int((await TidySecretary.retrieve(tm.path)).get(st.PAGE_ARG))
+        top_page = int((await TidySecretary.retrieve(tm.path)).get(st.FLD_PAGE))
 
         if next_page and next_page <= top_page:
             async def next():
@@ -466,9 +466,9 @@ class TidyMessage:
                 # Once this is the reaction we're looking for, rebuild the page.
                 history = await TidySecretary.retrieve(tm.path, whole=True)
                 page = history[str(next_page)]
-                tc = await tc.rebuild(page.get(st.CONTENT_ARG), title=page.get(st.TITLE_ARG),
-                                      mode=page.get(st.MODE_ARG), page=page.get(st.PAGE_ARG),
-                                      path=page.get(st.PATH_ARG), editable=page.get(st.EDITABLE_ARG),
+                tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
+                                      mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
+                                      path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
                                       req=tm.req, req_c=tm.req_c, checks=tm.checks,
                                       caller=next.__name__ + uid)
                 return tc
@@ -486,7 +486,7 @@ class TidyMessage:
         next_page = None
         if tm.page:
             next_page = int(tm.page) + 1
-        top_page = int((await TidySecretary.retrieve(tm.path)).get(st.PAGE_ARG))
+        top_page = int((await TidySecretary.retrieve(tm.path)).get(st.FLD_PAGE))
 
         if next_page and next_page <= top_page:
             async def first():
@@ -505,9 +505,9 @@ class TidyMessage:
 
                 # Once this is the reaction we're looking for, rebuild the page.
                 page = await TidySecretary.retrieve(tm.path)
-                tc = await tc.rebuild(page.get(st.CONTENT_ARG), title=page.get(st.TITLE_ARG),
-                                      mode=page.get(st.MODE_ARG), page=page.get(st.PAGE_ARG),
-                                      path=page.get(st.PATH_ARG), editable=page.get(st.EDITABLE_ARG),
+                tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
+                                      mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
+                                      path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
                                       req=tm.req, req_c=tm.req_c, checks=tm.checks,
                                       caller=first.__name__ + uid)
                 return tc
@@ -526,7 +526,7 @@ class TidyMessage:
             prev_page = int(tm.page) - 1
         else:
             curr_page = await TidySecretary.retrieve(tm.path)
-            prev_page = int(curr_page.get(st.PAGE_ARG)) - 1
+            prev_page = int(curr_page.get(st.FLD_PAGE)) - 1
 
         if prev_page >= 0:
             async def last():
@@ -546,9 +546,9 @@ class TidyMessage:
                 # Once this is the reaction we're looking for, rebuild the page.
                 history = await TidySecretary.retrieve(tm.path, whole=True)
                 page = history['0']
-                tc = await tc.rebuild(page.get(st.CONTENT_ARG), title=page.get(st.TITLE_ARG),
-                                      mode=page.get(st.MODE_ARG), page=page.get(st.PAGE_ARG),
-                                      path=page.get(st.PATH_ARG), editable=page.get(st.EDITABLE_ARG),
+                tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
+                                      mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
+                                      path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
                                       req=tm.req, req_c=tm.req_c, checks=tm.checks,
                                       caller=last.__name__ + uid)
                 return tc

@@ -26,7 +26,7 @@ async def escape_setter(ctx):
     """A function that encapsulates everything regarding changing a personal escape value."""
     # Request new escape value.
     tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_ESCAPE,
-                                 checks=[check_args_f("==", 1)])
+                                 checks=[check_args_f(st.MODE_EQ, 1)])
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
 
@@ -38,7 +38,7 @@ async def new_canon(ctx):
     """Makes a canon folder and files."""
     # Ask for RP name
     tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_CANON,
-                                 checks=[check_args_f("==", 1)])
+                                 checks=[check_args_f(st.MODE_EQ, 1)])
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
     canon = tm.prompt.content.replace(" ", "_")
@@ -58,7 +58,7 @@ async def new_canon(ctx):
     # If it's archived tell them they can revive the RP, or cancel the command.
     if is_archived:
         tm = await tm.rebuild(st.ASK_REVIVE_RP, checks=[check_alias_f(alias.CONFIRM_ALIASES),
-                                                        check_args_f("==", 1)])
+                                                        check_args_f(st.MODE_EQ, 1)])
         if tm.prompt.content == get_escape(ctx):
             return get_escape(ctx)
         if tm.prompt.content.lower() in alias.DENY:
@@ -67,7 +67,7 @@ async def new_canon(ctx):
     # Ask for GM.
     tm = await tm.rebuild(st.INF_REVIVE_A_GO + st.REQ_USER_GM if is_archived else st.REQ_USER_GM,
                           checks=[check_member_f(ctx),
-                                  check_args_f("==", 1)])
+                                  check_args_f(st.MODE_EQ, 1)])
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
     gm = tm.prompt.content
@@ -83,7 +83,7 @@ async def new_canon(ctx):
         dm_tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.ASK_IF_GM,
                                         dest=mem.dm_channel, member=mem,
                                         checks=[check_alias_f(alias.CONFIRM_ALIASES),
-                                                check_args_f("==", 1)])
+                                                check_args_f(st.MODE_EQ, 1)])
         if tm.prompt.content == get_escape(ctx):
             result = alias.DENY[0]
         else:
@@ -125,8 +125,8 @@ async def new_canon(ctx):
             os.rename(st.ARCHIVE_P.format(g, canon.title()), st.CANON_P.format(g, c))
 
         # Make a file to handle the command exceptions
-        open(st.EXCEPTIONS_P.format(g, c), "a").close()
-        with open(st.EXCEPTIONS_P.format(g, c), "w") as fout:
+        open(st.EXCEPTIONS_P.format(g, c), 'a').close()
+        with open(st.EXCEPTIONS_P.format(g, c), 'w') as fout:
             json.dump({}, fout, indent=1)
 
         # Make roles to discern who can do what.
@@ -138,8 +138,8 @@ async def new_canon(ctx):
 
         # Record the role ids for later access.
         role_ids = dict()
-        open(st.ROLES_P.format(g, c), "a").close()
-        with open(st.ROLES_P.format(g, c), "w") as fout:
+        open(st.ROLES_P.format(g, c), 'a').close()
+        with open(st.ROLES_P.format(g, c), 'w') as fout:
             for r in role:
                 role_type = r.name.split()[1]
                 role_ids[role_type] = r.id
@@ -147,12 +147,12 @@ async def new_canon(ctx):
 
         # For each member in the channel, make a file and add them to the proper role.
         for mem in ctx.guild.members:
-            with open(st.C_PLAYER_PREF_P.format(g, c, str(mem.id)), "w") as fout:
+            with open(st.C_PLAYER_PREF_P.format(g, c, str(mem.id)), 'w') as fout:
                 if gm == mem.mention:
-                    pref = {"user_type": UserType.GM.value, "relevant_character": None}
+                    pref = {st.FLD_UTYPE: UserType.GM.value, st.FLD_RCHAR: None}
                     await mem.add_roles(role[2])
                 else:
-                    pref = {"user_type": UserType.OBSERVER.value, "relevant_character": None}
+                    pref = {st.FLD_UTYPE: UserType.OBSERVER.value, st.FLD_RCHAR: None}
                     await mem.add_roles(role[0])
                 json.dump(pref, fout, indent=1)
 
@@ -168,47 +168,52 @@ async def new_canon(ctx):
         rw = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
         # Make channels for specific purposes per role.
-        ch = ["_IC", "_OOC", "_command_room", "_rules", "_meta", "_gm_notes", "_reading_room"]
+        ch = st.CHNL_ALL
         ch_dat = dict()
 
-        # IC Channel is locked on creation.
+        # All can see the Intro Channel on creation.
         channel = await ctx.guild.create_text_channel(canon + ch[0], category=category,
-                                                      overwrites={role[0]: r, role[1]: r, role[2]: r})
+                                                      overwrites={role[0]: r, role[1]: r, role[2]: rw})
+        ch_dat[channel.name] = channel.id
+
+        # IC Channel is open to players and the GM.
+        channel = await ctx.guild.create_text_channel(canon + ch[1], category=category,
+                                                      overwrites={role[0]: r, role[1]: rw, role[2]: rw})
         ch_dat[channel.name] = channel.id
 
         # OOC Channel is open to all on creation.
-        channel = await ctx.guild.create_text_channel(canon + ch[1], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[2], category=category,
                                                       overwrites={role[0]: rw, role[1]: rw, role[2]: rw})
         ch_dat[channel.name] = channel.id
 
         # Command Room is open only to players and the gm.
-        channel = await ctx.guild.create_text_channel(canon + ch[2], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[3], category=category,
                                                       overwrites={role[0]: n, role[1]: rw, role[2]: rw})
         ch_dat[channel.name] = channel.id
 
         # Rules is for posting that which people should follow that the bot doesn't enforce.
-        channel = await ctx.guild.create_text_channel(canon + ch[3], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[4], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: rw})
         ch_dat[channel.name] = channel.id
 
         # Meta is for viewing the meta-rules of the canon only. The GM only affects these indirectly.
-        channel = await ctx.guild.create_text_channel(canon + ch[4], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[5], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: r})
         ch_dat[channel.name] = channel.id
 
         # GM Notes is for the gm's eyes only.
-        channel = await ctx.guild.create_text_channel(canon + ch[5], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[6], category=category,
                                                       overwrites={role[0]: n, role[1]: n, role[2]: rw})
         ch_dat[channel.name] = channel.id
 
         # Reading Room is for everyone to read, but never directly touch.
-        channel = await ctx.guild.create_text_channel(canon + ch[6], category=category,
+        channel = await ctx.guild.create_text_channel(canon + ch[7], category=category,
                                                       overwrites={role[0]: r, role[1]: r, role[2]: r})
         ch_dat[channel.name] = channel.id
 
         # Record untouchable instance of data.
-        with open(st.IDS_P.format(g, c), "w") as fout:
-            json.dump({"channels": ch_dat, "roles": r_dat}, fout, indent=1)
+        with open(st.IDS_P.format(g, c), 'w') as fout:
+            json.dump({st.FLD_CHNL: ch_dat, st.FLD_ROLE: r_dat}, fout, indent=1)
 
     await tm.rebuild(status + " " + st.rand_slack(), req=False)
 
@@ -260,13 +265,13 @@ async def delete_canon(ctx):
 
         # Delete categories and roles in list.
         guild_name = ctx.guild.get_channel(ctx.channel.category_id).name
-        with open(st.IDS_P.format(g, c), "r") as fout:
+        with open(st.IDS_P.format(g, c), 'r') as fout:
             ids_json, roles = json.load(fout), list()
             for ch in ctx.guild.channels:
-                if ch.category_id == ctx.channel.category_id and ids_json["channels"].get(ch.name):
+                if ch.category_id == ctx.channel.category_id and ids_json[st.FLD_CHNL].get(ch.name):
                     await ch.delete(reason=st.INF_DELETE_CHANNEL)
             for r in ctx.guild.roles:
-                if ids_json["roles"].get(r.name):
+                if ids_json[st.FLD_ROLE].get(r.name):
                     roles.append(r)
             for r in roles:
                 await r.delete(reason=st.INF_DELETE_ROLE)
@@ -288,7 +293,7 @@ async def new_combat(ctx):
     # Ask for players.
     tm = TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_USER_COMBAT,
                            checks=[check_member_f(ctx),
-                                   check_args_f(">=", 2)])
+                                   check_args_f(st.MODE_GTE, 2)])
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
     players = shlex.split(tm.prompt.content)
@@ -374,19 +379,19 @@ def check_valid_f(c_set):
 def check_args_f(op, num):
     """A check-factory that makes a check that looks at the number of args relative to an operator.
         len(args) <op> num :: Plain English: the number of args should be <op> 'num' otherwise throw an error."""
-    if op == ">":
+    if op == st.MODE_GT:
         def check(*args):
             return True if len(args) > num else st.ERR_TOO_FEW_ARGS.format("more than", str(num))
-    elif op == ">=":
+    elif op == st.MODE_GTE:
         def check(*args):
             return True if len(args) >= num else st.ERR_TOO_FEW_ARGS.format(str(num), "or more")
-    elif op == "<":
+    elif op == st.MODE_LT:
         def check(*args):
             return True if len(args) < num else st.ERR_TOO_MANY_ARGS.format("less than", str(num))
-    elif op == "<=":
+    elif op == st.MODE_LTE:
         def check(*args):
             return True if len(args) <= num else st.ERR_TOO_MANY_ARGS.format(str(num), "or less")
-    elif op == "==":
+    elif op == st.MODE_EQ:
         def check(*args):
             return True if len(args) == num else st.ERR_INEXACT_ARGS.format(str(num))
     else:  # I hate myself, so fail silently and just not check the args for not inputting things properly.
@@ -427,17 +432,17 @@ async def wait_for_affirmation(ctx, channel, member, content):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
     tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=content, dest=channel, member=member,
                                  checks=[check_alias_f(alias.CONFIRM_ALIASES),
-                                         check_args_f("==", 1)])
+                                         check_args_f(st.MODE_EQ, 1)])
     return await tm.rebuild("Vote tallied.", req=False)
 
 
 # Utility #
 
 
-def check_perms(ctx, command=""):
+def check_perms(ctx):
     """Provides information about command relative to the member calling the command."""
     # Collect the command name.
-    command = command if command else ctx.command.full_parent_name + " " + ctx.command.name
+    command = ctx.command.full_parent_name.replace(" ", "_") + "_" + ctx.command.name
 
     if get_canon(ctx) and val.perms[command]:
         # Check role of player against those allowed to call command.
@@ -448,7 +453,7 @@ def check_perms(ctx, command=""):
         c = str(ctx.channel.category_id)
 
         # Check if on exception list.
-        with open(st.EXCEPTIONS_P.format(g, c), "r") as fout:
+        with open(st.EXCEPTIONS_P.format(g, c), 'r') as fout:
             exc_json = json.load(fout)
             can_call = can_call or (exc_json.get(command).get(ctx.message.author.id)
                                     if exc_json.get(command) else False)
@@ -466,7 +471,7 @@ def check_perms(ctx, command=""):
     return None
 
 
-def make_general_player_prefs(guild):
+def update_g_player_prefs(guild):
     """Initializes the player prefs if they don't exist."""
     # Make folder and initial docs if they don't exist.
     if not os.path.exists(st.G_PLAYER_PREFS_P.format(str(guild.id))):
@@ -477,8 +482,8 @@ def make_general_player_prefs(guild):
     # For each member in the channel, make a file.
     for mem in guild.members:
         if not os.path.exists(st.G_PLAYER_PREF_P.format(str(guild.id), str(mem.id))):
-            with open(st.G_PLAYER_PREF_P.format(str(guild.id), str(mem.id)), "a") as fout:
-                pref = {st.ESCAPE_ARG: '~'}
+            with open(st.G_PLAYER_PREF_P.format(str(guild.id), str(mem.id)), 'a') as fout:
+                pref = {st.FLD_ESC: '~'}
                 json.dump(pref, fout, indent=1)
         if not os.path.exists(st.MEM_COMMAND_G_LOGS_P.format(str(guild.id), str(mem.id))):
             os.makedirs(st.MEM_COMMAND_G_LOGS_P.format(str(guild.id), str(mem.id)))
@@ -491,7 +496,7 @@ def get_prefs(member, channel):
     c = str(channel.category_id)
     m = str(member.id)
     if os.path.exists(st.C_PLAYER_PREF_P.format(g, c, m)):
-        with open(st.C_PLAYER_PREF_P.format(g, c, m), "r") as fin:
+        with open(st.C_PLAYER_PREF_P.format(g, c, m), 'r') as fin:
             prefs = json.load(fin)
         return prefs
     return None
@@ -506,7 +511,7 @@ def get_canon(ctx):
 
 def get_user_type(member, channel):
     """Returns the usertype of a member relative to the channel being called from."""
-    return get_prefs(member, channel).get("user_type")
+    return get_prefs(member, channel).get(st.FLD_UTYPE)
 
 
 def get_character_json(character, channel):
@@ -516,8 +521,8 @@ def get_character_json(character, channel):
     c = str(channel.category_id)
 
     # Pull JSON file for reading.
-    open(st.CHARACTER_P.format(g, c, character), "a").close()
-    with open(st.CHARACTER_P.format(g, c, character), "r") as fin:
+    open(st.CHARACTER_P.format(g, c, character), 'a').close()
+    with open(st.CHARACTER_P.format(g, c, character), 'r') as fin:
         if os.stat(st.CHARACTER_P.format(g, c, character)).st_size > 0:
             a = json.load(fin)
         else:
@@ -525,22 +530,14 @@ def get_character_json(character, channel):
     return a
 
 
-def get_member(ctx, **kwargs):
-    """Returns the user by mention or None, if none found. If an ID is provided, returns based off of that instead."""
-
-    # # If ID provided, return what the bot would return. # #
-
-    if kwargs.get("id"):
-        return val.bot.get_user(kwargs.get("id"))
-
-    # # If no ID provided, return based on mention. # #
-
+def get_member(ctx, mention):
+    """Returns the user by mention or None, if none found."""
     # Link members to their mentions.
     members = {}
     for mem in ctx.guild.members:
         members[mem.mention] = mem
 
-    return members.get(kwargs.get("mention"))
+    return members.get(mention)
 
 
 def get_escape(ctx):
@@ -548,9 +545,9 @@ def get_escape(ctx):
     # Path syntactical candy.
     g = str(ctx.guild.id)
     a = str(ctx.author.id)
-    with open(st.G_PLAYER_PREF_P.format(g, a), "r") as fin:
+    with open(st.G_PLAYER_PREF_P.format(g, a), 'r') as fin:
         pref_json = json.load(fin)
-    return pref_json[st.ESCAPE_ARG]
+    return pref_json[st.FLD_ESC]
 
 
 def get_app_token():
@@ -576,12 +573,12 @@ def set_escape(ctx, escape):
     a = str(ctx.author.id)
 
     # Get the current prefs.
-    with open(st.G_PLAYER_PREF_P.format(g, a), "r") as fin:
+    with open(st.G_PLAYER_PREF_P.format(g, a), 'r') as fin:
         pref_json = json.load(fin)
 
     # Load and dump the new prefs with the changed escape.
-    pref_json[st.ESCAPE_ARG] = escape
-    with open(st.G_PLAYER_PREF_P.format(g, a), "w") as fout:
+    pref_json[st.FLD_ESC] = escape
+    with open(st.G_PLAYER_PREF_P.format(g, a), 'w') as fout:
         json.dump(pref_json, fout, indent=1)
 
 
