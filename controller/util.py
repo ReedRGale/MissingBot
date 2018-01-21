@@ -400,6 +400,7 @@ def check_args_f(op, num):
     return check
 
 
+
 def check_alias_f(aliases, no_dups=False):
     """A check-factory that makes a check that looks to see if there's
      any of a set of characters inside of an alias [dictionary of values]."""

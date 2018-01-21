@@ -4,7 +4,7 @@
 
 # Imports #
 
-
+from model import st
 from discord.ext import commands
 
 
@@ -44,6 +44,6 @@ def p_color(tm):
 
 calling = dict()
 perms = dict()
-bot = commands.Bot(command_prefix="~dd ", fetch_offline_members=True)
+bot = commands.Bot(command_prefix=st.COMM_PREFIX, fetch_offline_members=True)
 
 

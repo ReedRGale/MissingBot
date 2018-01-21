@@ -202,14 +202,14 @@ async def new(ctx):
                                 content=st.ERR_NEW_WHAT, mode=TidyMode.WARNING)
 
 
-@new.command(name=st.COMM_CANON, help=st.NN_HELP, brief=st.NN_BRIEF)
+@new.command(name=st.COMM_CANON, help=st.NEW_CAN_HELP, brief=st.NEW_CAN_BRIEF)
 @call_command
 async def new_canon(ctx, args):
     """Makes a new canon, including folders and player prefs."""
     return await util.new_canon(ctx)
 
 
-@new.command(name=st.COMM_COMBAT, help=st.NT_HELP, brief=st.NT_BRIEF)
+@new.command(name=st.COMM_COMBAT, help=st.NEW_COM_HELP, brief=st.NEW_COM_BRIEF)
 @call_command
 async def new_combat(ctx, args):
     return await util.new_combat(ctx.message)
@@ -226,7 +226,7 @@ async def delete(ctx):
                                 content=st.ERR_DELETE_WHAT, mode=TidyMode.WARNING)
 
 
-@delete.command(name=st.COMM_CANON, help=st.DN_HELP, brief=st.DN_BRIEF)
+@delete.command(name=st.COMM_CANON, help=st.DEL_CAN_HELP, brief=st.DEL_CAN_BRIEF)
 @call_command
 async def delete_canon(ctx, args):
     """Deletes a canon, though preserves folders and player prefs."""
@@ -244,7 +244,7 @@ async def edit(ctx):
                                 content=st.ERR_EDIT_WHAT, mode=TidyMode.WARNING)
 
 
-@edit.command(name=st.COMM_ESC, help=st.SE_HELP, brief=st.SE_BRIEF)
+@edit.command(name=st.COMM_ESC, help=st.EDT_ESC_HELP, brief=st.EDT_ESC_BRIEF)
 @call_command
 async def edit_escape(ctx, args):
     return await util.escape_setter(ctx)
@@ -253,7 +253,7 @@ async def edit_escape(ctx, args):
 # DEBUG COMMANDS  #
 
 
-@val.bot.group(name=st.COMM_DEBUG, help=st.DB_HELP, brief=st.DB_BRIEF)
+@val.bot.group(name=st.COMM_DEBUG, help=st.DEBUG_HELP, brief=st.DEBUG_BRIEF)
 @call_command
 async def debug(ctx):
     """Command to test things."""

@@ -7,111 +7,6 @@
 
 import random
 
-# Misc
-
-KEYWORDS = dict()
-
-
-# Help Messages #
-
-
-HELP_BRIEF = "This is the command you're calling right now. Woohoo."
-HELP_HELP = "Alright, I assume you're here because it was in the main command. Here's the skinny, and I'll try to " \
-            "keep it short and sweet. Commands are put in groups. Those groups of commands can have groups. " \
-            "Ya follow me so far? Cool. \n\nSo when you call 'help' you should denote all the groups that own " \
-            "that command. I know that might sound weird, so let me give you and example, 'kay? \n\n" \
-            "So, if you wanted to know about the command '~dd new canon,' you should call '~dd help new canon' " \
-            "instead of '~dd help canon' because without knowing it's for a 'new' canon, I can't know " \
-            "for sure what you're talking about. Basically, just call it like you would normally but " \
-            "instead preface it with '~dd help' instead of just '~dd'. \n\nPretty intuitive, " \
-            "right? Also, if there are important keywords defined by your GM, I store them under the help command as " \
-            "well. I don't give the author to use groups though, so to call a keyword, definition it's just '~dd " \
-            "<keyword>. Simple enough, I think. Now you know how to ask me for something specific, so you should be " \
-            "ready to use my features. Play nice with me. ^_- ~~✦"
-
-NEW_BRIEF = "This is for commands that create something."
-NEW_HELP = "A lot of commands are going to end up having me make stuff. That is, they'll have me _do work._ Snore. " \
-           "But in general, with this kind of work, I'll be recording new information, making channels, roles, " \
-           "permissions, character logs, rules... the works. \n\nDon't work me too hard, yeah? ;u;"
-
-DLTE_BRIEF = "A group of commands where I break shit. Gracefully."
-DLTE_HELP = "You call a delete command, and I'm going to be ~~tearing up records with gleeful abandon~~ carefully " \
-            "and neatly ascertain the data that needs to be deleted based off your command. Usually there some sort " \
-            "of failsafe to stop you from accidentally deleting something, but I wouldn't rely on that necessarily. " \
-            "There's something nice about the carnal desire to destroy what's been created, after all."
-
-EDIT_BRIEF = "A group of commands for modifications."
-EDIT_HELP = "You tell me to change a thing. I change the thing. Kinda just depends on the thing I'm changing. Shrug. " \
-            "I dunno what you want me to tell you--there isn't much more to it than the brief. It's cute that you're " \
-            "spending time to hear all the things I have to say though. ^_^"
-
-GET_BRIEF = "A group of commands for retrieving information."
-GET_HELP = "Hehehe, the name for the string this is stored in is called 'GET_HELP'. Uh. Anyway. These commands are " \
-           "designated for retrieving some type of information depending on the child command. This could include " \
-           "information about your character's stats, inventory, metadata about your canon... lots of things."
-
-
-# OLD Help Messages #
-
-
-NN_BRIEF = "'NewCanon' is a command to kick off a new RP."
-NN_HELP = "To Call: '~dd newcanon'\n\n" \
-          "Call anywhere within the server to have me walk you through the process of starting a new RP. Ultimately " \
-          "this will create a new set of channels under a specific category named for said new RP. Further, it " \
-          "automatically assigns the GM the role of GM and all other players to Observers roles. Members added to " \
-          "the RP will become Players and through me can be granted privileges to call certain commands--to make " \
-          "characters and start combat for instance. Otherwise, this sets the stage for walking the GM through the " \
-          "metarules process wherein they choose the features I provide that they wish to use for their RP."
-
-DN_BRIEF = "'DeleteCanon' is a command to delete an RP and its associated channels and roles."
-DN_HELP = "To Call: '~dd newcanon'\n\n" \
-          "Call within the canon to ask all players if the canon should be deleted and the RP ended... " \
-          "for the time being. If the vote goes through, I delete the channels, category and roles. I do, however, " \
-          "hold onto player prefs, character stats, locations and other useful data that was generated through the" \
-          "course of the RP. Just in case, you know. If you call newcanon with the same name as deleted canon," \
-          "I will automatically link the data from the previous RP up with the newly created one. You're welcome."
-
-FT_BRIEF = "'Forecast' is a command that should give you an idea of how likely " \
-           "getting any particular amount of successes will be."
-FT_HELP = "To Call: '~dd forecast [forecast] [# of dice in pool]' \n\n" \
-          "Forecast gives an accurate measurement, using NWoD skill-check rules, of the likelihood that a particular" \
-          "amount of successes will occur--called the forecast--in a particular dice pool--that is, the total number " \
-          "of dice that are currently being rolled."
-
-NR_BRIEF = "'NewCharacter' is a command that allows you to add another character to the canon."
-NR_HELP = "To Call: '~dd newcharacter' within an RP command_room\n\n" \
-          "When called, 'NewCharacter' walks the user through the process of making a new character following the" \
-          "meta decided upon for the RP. Each step records a single important field for the character. Unless given" \
-          "permission, this can only be called by the GM. This command is not callable until the meta is decided upon."
-
-LR_BRIEF = "'ListCharacters' is a command that shows you all recorded characters in the canon."
-LR_HELP = "To Call: '~dd listcharacters' within an RP command_room\n\n" \
-          "When called, prints a list of each character currently registered in the RP."
-
-SL_BRIEF = "'Skillroll' is a command that walks you through rolling dice for a skill roll."
-SL_HELP = "To Call: '~dd skillroll' within an RP command_room\n\n" \
-          "Skillroll asks all the proper questions to make a NWoD Skill Roll, then properly formats the string for " \
-          "posting in a forum or in the middle of a channel message."
-
-NT_BRIEF = "'NewCombat' is a command that begins a combat instance for you and other members participating."
-NT_HELP = "To Call: '~dd skillroll' within an RP command_room\n\n" \
-          "When called, NewCombat asks for each member participating in a combat instance. After confirming that " \
-          "each member properly wants to participate/can participate in said combat, it sets up private channels " \
-          "for each participant and opens the combat interface."
-
-SE_BRIEF = "'SetEscape' is a command that changes the phrase to tell me that'll stop the endless slew of questions."
-SE_HELP = "To Call: '~dd setescape' anywhere.\n\n" \
-          "When called, I'll ask ya for a phrase to replace the one that I typically use, '~dd' for escaping. " \
-          "Try not to make this something you'd say often, because I'll definitely mix it up with something " \
-          "you might want me to take as a command."
-
-HP_BRIEF = "'Help' is a standard help command. By calling '~dd help [item]' " \
-           "on any command or all-caps word, you can get a small piece on that item."
-HP_HELP = "Good work. That is exactly how you check the detailed help docs of a command."
-
-DB_BRIEF = "'Debug' is a command that helps me test things. Don't worry about it."
-DB_HELP = "If I set this up properly, how did you ever get here...? Are you on my account? Spoopy."
-
 
 # Informative Messages #
 
@@ -124,7 +19,8 @@ INF_CHANNELS_MADE = "Alright bud, I think things are set in place. Your private 
 INF_CANON_MADE = "All the paperwork is in order. Enjoy the new world, I guess."
 INF_CANON_SET = "Well, here you are. Enjoy your stay or something."
 INF_NOT_GM = "Wise choice. I'll let that jerk know you don't want any part of this nonsense."
-INF_DENIED_GM = "They made the smart choice and chose not to be GM. Call me again when you have someone for the job."
+INF_DENIED_GM = "They made the smart choice and chose not to be GM. Call me again when you have someone for the job." \
+                "Hint:  maybe try asking them first??"
 INF_DENIED_DELETE = "Seems people still like this world. At the very least, the vote failed. The show goes on, for now."
 INF_DELETE_CHANNEL = "I zorked this because I was told to by the GM and the players voted for it."
 INF_DELETE_ROLE = "I blanged this because I was told to by the GM and the players agreed."
@@ -314,6 +210,7 @@ COMM_DEL = "delete"
 COMM_EDT = "edit"
 COMM_ESC = "escape"
 COMM_COMBAT = "combat"
+COMM_PREFIX = "~dd "
 
 FULL_HELP = "_" + COMM_HELP
 FULL_DEBUG = "_" + COMM_DEBUG
@@ -321,6 +218,83 @@ FULL_NEW_CAN = "_".join([COMM_NEW, COMM_CANON])
 FULL_NEW_COM = "_".join([COMM_NEW, COMM_COMBAT])
 FULL_DEL_CAN = "_".join([COMM_DEL, COMM_CANON])
 FULL_EDT_ESC = "_".join([COMM_EDT, COMM_ESC])
+
+
+# Help Messages #
+
+
+HELP_BRIEF = "This is the command you're calling right now. Woohoo."
+HELP_HELP = "Alright, I assume you're here because it was in the main command. Here's the skinny, and I'll try to " \
+            "keep it short and sweet. Commands are put in groups. Those groups of commands can have groups. " \
+            "Ya follow me so far? Cool. \n\nSo when you call 'help' you should denote all the groups that own " \
+            "that command. I know that might sound weird, so let me give you and example, 'kay? \n\n" \
+            "So, if you wanted to know about the command '" + COMM_PREFIX + COMM_NEW + " " + COMM_CANON + \
+            "' you should call '~dd help new canon' instead of '~dd help canon' because without knowing it's for a " \
+            "'new' canon, I can't know for sure what you're talking about. Basically, just call it like you would " \
+            "normally but instead preface it with '~dd help' instead of just '~dd'. \n\nPretty intuitive, " \
+            "right? Also, if there are important keywords defined by your GM, I store them under the help command as " \
+            "well. I don't give the author to use groups though, so to call a keyword, definition it's just '~dd " \
+            "<keyword>. Simple enough, I think. Now you know how to ask me for something specific, so you should be " \
+            "ready to use my features. Play nice with me. ^_- ~~✦"
+
+NEW_BRIEF = "This is for commands that create something."
+NEW_HELP = "A lot of commands are going to end up having me make stuff. That is, they'll have me _do work._ Snore. " \
+           "But in general, with this kind of work, I'll be recording new information, making channels, roles, " \
+           "permissions, character logs, rules... the works. \n\nDon't work me too hard, yeah? ;u;"
+
+DLTE_BRIEF = "A group of commands where I break shit. Gracefully."
+DLTE_HELP = "You call a delete command, and I'm going to be ~~tearing up records with gleeful abandon~~ carefully " \
+            "and neatly ascertain the data that needs to be deleted based off your command. Usually there some sort " \
+            "of failsafe to stop you from accidentally deleting something, but I wouldn't rely on that necessarily. " \
+            "There's something nice about the carnal desire to destroy what's been created, after all."
+
+EDIT_BRIEF = "A group of commands for modifications."
+EDIT_HELP = "You tell me to change a thing. I change the thing. Kinda just depends on the thing I'm changing. Shrug. " \
+            "I dunno what you want me to tell you--there isn't much more to it than the brief. It's cute that you're " \
+            "spending time to hear all the things I have to say though. ^_^"
+
+GET_BRIEF = "A group of commands for retrieving information."
+GET_HELP = "Hehehe, the name for the string this is stored in is called 'GET_HELP'. Uh. Anyway. These commands are " \
+           "designated for retrieving some type of information depending on the child command. This could include " \
+           "information about your character's stats, inventory, metadata about your canon... lots of things."
+
+
+# OLD Help Messages #
+
+
+NEW_CAN_BRIEF = "'new canon' is a command to kick off a new RP."
+NEW_CAN_HELP = "To Call: '" + COMM_PREFIX + COMM_NEW + " " + COMM_CANON + "'\n\n" \
+               "Call anywhere within the server to have me walk you through the process of starting a new RP. " \
+               "Ultimately this will create a new set of channels under a specific category named for said new RP. " \
+               "Further, it automatically assigns the GM the role of GM and all other players to Observers roles. " \
+               "Members added to the RP will become Players and through me can be granted privileges to call " \
+               "certain commands--to make characters and start combat for instance. Otherwise, this sets the " \
+               "stage for walking the GM through the metarules process wherein they choose the features I provide " \
+               "that they wish to use for their RP."
+
+DEL_CAN_BRIEF = "'delete canon' is a command to delete an RP and its associated channels and roles."
+DEL_CAN_HELP = "To Call: '" + COMM_PREFIX + COMM_DEL + " " + COMM_CANON + "'\n\n" \
+               "Call within the canon to ask all players if the canon should be deleted and the RP ended... " \
+               "for the time being. If the vote goes through, I delete the channels, category and roles. I do, " \
+               "however, hold onto player prefs, character stats, locations and other useful data that was generated " \
+               "through the course of the RP. Just in case, you know. If you call newcanon with the same name as " \
+               "deleted canon, I will automatically link the data from the previous RP up with the newly created one. " \
+               "You're welcome."
+
+NEW_COM_BRIEF = "'new combat' is a command that begins a combat instance for you and other members participating."
+NEW_COM_HELP = "To Call: '" + COMM_PREFIX + COMM_NEW + " " + COMM_COMBAT + "' within an RP command_room\n\n" \
+               "When called, 'new combat' asks for each member participating in a combat instance. After confirming " \
+               "that each member properly wants to participate/can participate in said combat, it sets up private " \
+               "channels for each participant and opens the combat interface."
+
+EDT_ESC_BRIEF = "'edit escape' is a command that changes the phrase to tell me that'll stop a command midway."
+EDT_ESC_HELP = "To Call: '" + COMM_PREFIX + COMM_EDT + " " + COMM_ESC + "' anywhere.\n\n" \
+               "When called, I'll ask ya for a phrase to replace the one that I typically use, '~' for escaping. " \
+               "Try not to make this something you'd say often, because I'll definitely mix it up with something " \
+               "you might want me to take as a command."
+
+DEBUG_BRIEF = "'Debug' is a command that helps me test things. Don't worry about it."
+DEBUG_HELP = "If I set this up properly, how did you ever get here...? Are you on my account? Spoopy."
 
 
 # File Paths #
