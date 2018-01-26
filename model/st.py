@@ -8,6 +8,28 @@
 import random
 
 
+# Command Names #
+
+
+COMM_HELP = "help"
+COMM_DEBUG = "debug"
+COMM_NEW = "new"
+COMM_CANON = "canon"
+COMM_DEL = "delete"
+COMM_EDT = "edit"
+COMM_ESC = "escape"
+COMM_COMBAT = "combat"
+COMM_PREFIX = "~dd "
+COMM_UNF = "unaffiliated"
+
+FULL_HELP = "_" + COMM_HELP
+FULL_DEBUG = "_" + COMM_DEBUG
+FULL_NEW_CAN = "_".join([COMM_NEW, COMM_CANON])
+FULL_NEW_COM = "_".join([COMM_NEW, COMM_COMBAT])
+FULL_DEL_CAN = "_".join([COMM_DEL, COMM_CANON])
+FULL_EDT_ESC = "_".join([COMM_EDT, COMM_ESC])
+
+
 # Informative Messages #
 
 
@@ -35,6 +57,11 @@ INF_TOP_LEVEL_COMMANDS = "Here's all the major command types. If you want to del
                          "I've left more on calling specific types, call '~dd help help'. Thank.\n\n"
 INF_GROUP = "<Command-Group>"
 INF_COMMAND = "<Command>"
+INF_HEY_THERE = "Hiya! You called?" \
+                "\n\nHmm... figure I should give some useful information. I'm DJ Dante, " \
+                "here to help you remix canons by facilitating your roleplays! I have a lot of features " \
+                "(if Mr. Programmer is done creating this portal for me to talk to you, anyway) and " \
+                "if you want to know more about them, I'd recommend calling '" + COMM_PREFIX + COMM_HELP + "'!"
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
@@ -129,8 +156,9 @@ ERR_INVALID_TIDYMODE = "Mr. Programmer, it looks like you gave me a TidyMode I d
                        "now, Mr. Programmer. After all, you wrote this error code."
 ERR_TOO_FEW_ARGS = "Soooo, I'm looking for a few more arguments than that. Specifically, I'm looking for {} {}."
 ERR_TOO_MANY_ARGS = "Bit overkill there. I'm looking for a little less than that. Specifically, {} {}. If you want to" \
-                    " have two words in one arg, surround it with quotation marks like \"this is!\""
-ERR_INEXACT_ARGS = "Noooot exactly. I'm looking for '{}' arg here. Can you do that?"
+                    " have two words in one word here, surround it with quotation marks like \"this is!\""
+ERR_INEXACT_ARGS = "Noooot exactly. I'm looking for '{}' arg here. If you want to" \
+                    " have two words in one word here, surround it with quotation marks like \"this is!\""
 ERR_REPEAT_VAL = "So, you don't repeat variables here. Please. You know the one I'm talking about. " \
                  "'{}.' Don't do that."
 ERR_NOT_IN_ALIAS = "I don't know the word '{}' in this context. Maybe try again?"
@@ -140,8 +168,14 @@ ERR_NO_SUCH_TYPE = "So, I looked, and I don't have any command in my database ca
 ERR_NO_SUCH_KEYWORD = "Sadly, I can't find a keyword in your canon called '{}.' Them's the breaks."
 ERR_DELETE_WHAT = "...delete what now?"
 ERR_HELP_WHAT = "...sorry I can't help with nonsense."
+ERR_NEW_WHAT = "...sorry, I can't create every random thing you come up with."
 ERR_DUP_ROLES = "You can't have multiple roles in a canon!!"
-
+ERR_MEMBER_DANTE = "Flattering as you are, I am not a legal target for this. Cute sentiment though."
+ERR_MEMBER_BOT = "'{}' is a bot. Don't try to use bots as the targets for commands, silly. They can't RP. " \
+                 "Except for me. ...Not that I'm considered a legal target for the command either. ;u;\n\n"
+ERR_INV_USER_CONTENT_NOT_ALNUM = "'{}' isn't alphanumeric. That is... you put weird stuff in it. This can " \
+                                 "cause issues when making files or channels and junk. Take out the weird " \
+                                 "characters this time."
 
 # File Names #
 
@@ -199,26 +233,6 @@ MODE_LT = "<"
 MODE_LTE = "<="
 MODE_EQ = "=="
 
-# Command Names #
-
-
-COMM_HELP = "help"
-COMM_DEBUG = "debug"
-COMM_NEW = "new"
-COMM_CANON = "canon"
-COMM_DEL = "delete"
-COMM_EDT = "edit"
-COMM_ESC = "escape"
-COMM_COMBAT = "combat"
-COMM_PREFIX = "~dd "
-
-FULL_HELP = "_" + COMM_HELP
-FULL_DEBUG = "_" + COMM_DEBUG
-FULL_NEW_CAN = "_".join([COMM_NEW, COMM_CANON])
-FULL_NEW_COM = "_".join([COMM_NEW, COMM_COMBAT])
-FULL_DEL_CAN = "_".join([COMM_DEL, COMM_CANON])
-FULL_EDT_ESC = "_".join([COMM_EDT, COMM_ESC])
-
 
 # Help Messages #
 
@@ -228,14 +242,14 @@ HELP_HELP = "Alright, I assume you're here because it was in the main command. H
             "keep it short and sweet. Commands are put in groups. Those groups of commands can have groups. " \
             "Ya follow me so far? Cool. \n\nSo when you call 'help' you should denote all the groups that own " \
             "that command. I know that might sound weird, so let me give you and example, 'kay? \n\n" \
-            "So, if you wanted to know about the command '" + COMM_PREFIX + COMM_NEW + " " + COMM_CANON + \
-            "' you should call '~dd help new canon' instead of '~dd help canon' because without knowing it's for a " \
-            "'new' canon, I can't know for sure what you're talking about. Basically, just call it like you would " \
+            "If you wanted to know about the command '" + COMM_PREFIX + COMM_NEW + " " + COMM_CANON + \
+            "' you would call '~dd help new canon' instead of '~dd help canon' because without knowing it's for a " \
+            "'new' canon, I can't know for sure what you're talking about.\n\nBasically, just call it like you would " \
             "normally but instead preface it with '~dd help' instead of just '~dd'. \n\nPretty intuitive, " \
             "right? Also, if there are important keywords defined by your GM, I store them under the help command as " \
-            "well. I don't give the author to use groups though, so to call a keyword, definition it's just '~dd " \
-            "<keyword>. Simple enough, I think. Now you know how to ask me for something specific, so you should be " \
-            "ready to use my features. Play nice with me. ^_- ~~✦"
+            "well. it's just '~dd <keyword>.' Simple enough, I think.\n\n" \
+            "Now you know how to ask me for something specific, so you should be ready to use my features. " \
+            "Play nice with me. ^_^"
 
 NEW_BRIEF = "This is for commands that create something."
 NEW_HELP = "A lot of commands are going to end up having me make stuff. That is, they'll have me _do work._ Snore. " \
@@ -277,7 +291,7 @@ DEL_CAN_HELP = "To Call: '" + COMM_PREFIX + COMM_DEL + " " + COMM_CANON + "'\n\n
                "Call within the canon to ask all players if the canon should be deleted and the RP ended... " \
                "for the time being. If the vote goes through, I delete the channels, category and roles. I do, " \
                "however, hold onto player prefs, character stats, locations and other useful data that was generated " \
-               "through the course of the RP. Just in case, you know. If you call newcanon with the same name as " \
+               "through the course of the RP. Just in case, you know. If you call new canon with the same name as " \
                "deleted canon, I will automatically link the data from the previous RP up with the newly created one. " \
                "You're welcome."
 
@@ -399,4 +413,8 @@ I_SO = "Glad that's over. Now where was I on that cosplay..."
 J_SO = "Was that it? Couldn't you have done that yourself? \n\nHaha, just kidding. I know ya'll are just _helpless_ " \
        " without me. ;>"
 K_SO = "Yawn."
-ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO, H_SO, I_SO, J_SO, K_SO]
+L_SO = "Time to find de wae."
+M_SO = "Hey, you know I don't say this often but... thanks for letting me do my job. I joke... but I appreciate it. " \
+       "^//^"
+N_SO = "Manga calls!"
+ALL_SLACK = [A_SO, B_SO, C_SO, D_SO, E_SO, F_SO, G_SO, H_SO, I_SO, J_SO, K_SO, L_SO, M_SO, N_SO]

@@ -126,6 +126,17 @@ async def on_ready():
     val.perms[st.FULL_EDT_ESC] = ()
 
 
+@val.bot.event
+async def on_message(msg):
+    # Check if the DJ is being addressed. If so, inform the user to call help.
+    ctx = await val.bot.get_context(msg)
+    if not val.calling.get(msg.author.id) and str(val.bot.owner_id) in msg.content:
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=st.INF_HEY_THERE,
+                                req=False, mode=TidyMode.STANDARD)
+    else:
+        await val.bot.invoke(ctx)
+
+
 # GROUPLESS COMMANDS #
 
 

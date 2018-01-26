@@ -44,14 +44,15 @@ class TidyMessage:
 
     def __init__(self, **kwargs):
         # Information needed on build()
-        self.ctx = kwargs.get("ctx")                # Needed for the bot.wait_for() in req
-        self.mode = kwargs.get("mode")              # Value of the TidyMode that determines the embed created
-        self.esc = kwargs.get("esc")                # Escape string that exits req
-        self.esc_m = kwargs.get("esc_m")            # What to say if escaped
-        self.title = kwargs.get("title")            # Title of the embed, if given
-        self.dest = kwargs.get("dest")              # The destination of the message
-        self.focus = kwargs.get("focus")            # The member who we're waiting for a response from
-        self.editable = kwargs.get("editable")      # Whether the data can be edited later or not
+        self.ctx = kwargs.get("ctx")                    # Needed for the bot.wait_for() in req
+        self.mode = kwargs.get("mode")                  # Value of the TidyMode that determines the embed created
+        self.esc = kwargs.get("esc")                    # Escape string that exits req
+        self.esc_m = kwargs.get("esc_m")                # What to say if escaped
+        self.title = kwargs.get("title")                # Title of the embed, if given
+        self.dest = kwargs.get("dest")                  # The destination of the message
+        self.focus = kwargs.get("focus")                # The member who we're waiting for a response from
+        self.editable = kwargs.get("editable")          # Whether the data can be edited later or not
+        self.req = kwargs.get("req")                    # Whether this TidyMessage is looking for a response or not
 
         # Information generated in rebuild()
         self.prompt = kwargs.get("prompt")          # The message that prompted this TidyMessage
@@ -59,7 +60,6 @@ class TidyMessage:
         self.embed = kwargs.get("embed")            # The embed created through this TidyMessage
         self.page = kwargs.get("page")              # The index of the TidyPage we're using
         self.path = kwargs.get("path")              # The location of the TidyPage record
-        self.req = kwargs.get("req")                # Whether this TidyMessage is looking for a response or not
         self.checks = kwargs.get("checks")          # List of functions used to check prompt legitimacy
         self.req_lock = kwargs.get("req_lock")      # If a request loop is happening already or not
         self.caller = kwargs.get("caller")          # The function calling the build or rebuild
@@ -90,7 +90,7 @@ class TidyMessage:
             g = ctx.guild.id                                                # Guild
             c = tm.dest.category_id if tm.dest.category_id else tm.dest.id  # Canon
             m = tm.focus.id                                                 # Member
-            f = ctx.command.name                                            # JSON File
+            f = ctx.command.name if ctx.command else st.COMM_UNF            # JSON File
             i = 0                                                           # Name Snowflakifier
             if os.path.exists(st.CANON_P.format(g, c)):  # If the category is a canon move to canon command logs.
                 while os.path.exists(st.MEM_COMMAND_C_LOG_P.format(g, c, m, f + str(i))):
@@ -386,7 +386,7 @@ class TidyMessage:
                 # Check the information.
                 if tc.checks:
                     for c in tc.checks:
-                        err = c(*shlex.split(tc.prompt.content))
+                        err = c(*shlex.split(tc.prompt.content).strip('\"'))
                         if isinstance(err, str):
                             tc = await tc.rebuild(err + " " + tm.req_c, editable=tm.editable,
                                                   req=tm.req, req_c=tm.req_c, checks=tm.checks,

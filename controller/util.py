@@ -38,10 +38,10 @@ async def new_canon(ctx):
     """Makes a canon folder and files."""
     # Ask for RP name
     tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_CANON,
-                                 checks=[check_args_f(st.MODE_EQ, 1)])
+                                 checks=[check_args_f(st.MODE_EQ, 1), check_alnum_f()])
     if tm.prompt.content == get_escape(ctx):
         return get_escape(ctx)
-    canon = tm.prompt.content.replace(" ", "_")
+    canon = tm.prompt.content.replace(" ", "_").replace("\"", "")
 
     # Path syntactical candy.
     g = str(ctx.guild.id)
@@ -348,8 +348,12 @@ def check_member_f(ctx):
     """A check-factory that makes a check to see if the arguments are all members of a particular context."""
     def check(*args):
         for mem in args:
-            if not get_member(ctx, mention=mem):
+            if not get_member(ctx, mem):
                 return st.ERR_MEMBER_NONEXIST.format(mem)
+            elif get_member(ctx, mem).id == val.bot.owner_id:
+                return st.ERR_MEMBER_DANTE
+            elif get_member(ctx, mem).bot:
+                return st.ERR_MEMBER_BOT.format(mem)
         return True
     return check
 
@@ -376,6 +380,17 @@ def check_valid_f(c_set):
     return check
 
 
+def check_alnum_f():
+    """A check-factory that makes a check that looks to see if there's
+    no special characters inside each arg."""
+    def check(*args):
+        for a in args:
+            if not a.isalnum():
+                return st.ERR_INV_USER_CONTENT_NOT_ALNUM.format(a)
+        return True
+    return check
+
+
 def check_args_f(op, num):
     """A check-factory that makes a check that looks at the number of args relative to an operator.
         len(args) <op> num :: Plain English: the number of args should be <op> 'num' otherwise throw an error."""
@@ -398,7 +413,6 @@ def check_args_f(op, num):
         def check(*args):
             return True
     return check
-
 
 
 def check_alias_f(aliases, no_dups=False):
@@ -537,7 +551,6 @@ def get_member(ctx, mention):
     members = {}
     for mem in ctx.guild.members:
         members[mem.mention] = mem
-
     return members.get(mention)
 
 
