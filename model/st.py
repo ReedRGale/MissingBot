@@ -343,9 +343,8 @@ MEM_COMMAND_G_LOG_P = MEM_COMMAND_G_LOGS_P + "\\{}.json"    # Guild ID, Member I
 
 # Other #
 
-SUCCESS = "S - "
-FAILURE = "F - "
-AGAIN = "A - "
+
+WS = [' ', '_', '-']
 
 
 # Methods #

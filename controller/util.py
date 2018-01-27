@@ -385,7 +385,7 @@ def check_alnum_f():
     no special characters inside each arg."""
     def check(*args):
         for a in args:
-            if not a.isalnum():
+            if not alnum_or_ws(a):
                 return st.ERR_INV_USER_CONTENT_NOT_ALNUM.format(a)
         return True
     return check
@@ -608,3 +608,11 @@ def is_any(content, vals):
         if v.lower() == content.lower():
             return True
     return False
+
+
+def alnum_or_ws(content):
+    """Checks if the string has only alnum or 'whitespace' characters."""
+    for ch in content:
+        if not ch.isalnum() and ch not in st.WS:
+            return False
+    return True

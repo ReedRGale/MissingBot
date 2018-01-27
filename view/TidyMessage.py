@@ -343,6 +343,22 @@ class TidyMessage:
                        icon_url=a_url)
         return emb
 
+    async def remove_button(self, r):
+        """Remove a reaction-button from a button generator when cancelled."""
+        # Remove the button.
+        bot_m = None
+        for m in self.ctx.bot.get_all_members():
+            if m.id == self.ctx.bot.owner_id:
+                bot_m = m
+                break
+        try:
+            await self.message.remove_reaction(r, bot_m)
+        except discord.errors.NotFound:
+            pass
+
+        # Throw the error so we know this is being cancelled.
+        raise asyncio.CancelledError()
+
     @staticmethod
     def set_t_imgs(mode, imgs):
         TidyMessage._t_imgs[mode] = imgs
@@ -386,7 +402,7 @@ class TidyMessage:
                 # Check the information.
                 if tc.checks:
                     for c in tc.checks:
-                        err = c(*shlex.split(tc.prompt.content).strip('\"'))
+                        err = c(*shlex.split(tc.prompt.content))
                         if isinstance(err, str):
                             tc = await tc.rebuild(err + " " + tm.req_c, editable=tm.editable,
                                                   req=tm.req, req_c=tm.req_c, checks=tm.checks,
@@ -422,7 +438,10 @@ class TidyMessage:
                     return u == tc.focus and r.emoji == '◀'
 
                 # Wait for a response.
-                await tc.ctx.bot.wait_for('reaction_add', check=check)
+                try:
+                    await tc.ctx.bot.wait_for('reaction_add', check=check)
+                except asyncio.CancelledError:
+                    await tc.remove_button('◀')
 
                 # Once this is the reaction we're looking for, rebuild the page.
                 history = await TidySecretary.retrieve(tm.path, whole=True)
@@ -461,7 +480,10 @@ class TidyMessage:
                     return u == tc.focus and r.emoji == '▶'
 
                 # Wait for a response.
-                await tc.ctx.bot.wait_for('reaction_add', check=check)
+                try:
+                    await tc.ctx.bot.wait_for('reaction_add', check=check)
+                except asyncio.CancelledError:
+                    await tc.remove_button('◀')
 
                 # Once this is the reaction we're looking for, rebuild the page.
                 history = await TidySecretary.retrieve(tm.path, whole=True)
@@ -501,7 +523,10 @@ class TidyMessage:
                     return u == tc.focus and r.emoji == '⏭'
 
                 # Wait for a response.
-                await tc.ctx.bot.wait_for('reaction_add', check=check)
+                try:
+                    await tc.ctx.bot.wait_for('reaction_add', check=check)
+                except asyncio.CancelledError:
+                    await tc.remove_button('⏭')
 
                 # Once this is the reaction we're looking for, rebuild the page.
                 page = await TidySecretary.retrieve(tm.path)
@@ -541,7 +566,10 @@ class TidyMessage:
                     return u == tc.focus and r.emoji == '⏮'
 
                 # Wait for a response.
-                await tc.ctx.bot.wait_for('reaction_add', check=check)
+                try:
+                    await tc.ctx.bot.wait_for('reaction_add', check=check)
+                except asyncio.CancelledError:
+                    await tc.remove_button('⏮')
 
                 # Once this is the reaction we're looking for, rebuild the page.
                 history = await TidySecretary.retrieve(tm.path, whole=True)
