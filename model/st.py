@@ -109,6 +109,7 @@ ASK_REVIVE_RP = "Ah. So my files indicate this RP existed before. So, uh, I'm no
 
 # Error Messages #
 
+
 ERR_REPEAT_1 = "Let's try that again."
 ERR_REPEAT_2 = "Try again. With feeling this time."
 
@@ -177,6 +178,7 @@ ERR_INV_USER_CONTENT_NOT_ALNUM = "'{}' isn't alphanumeric. That is... you put we
                                  "cause issues when making files or channels and junk. Take out the weird " \
                                  "characters this time."
 
+
 # File Names #
 
 
@@ -185,6 +187,7 @@ ARCHIVES_FN = "_archives"
 GENERAL_FN = "general"
 GUILDS_FN = "guilds"
 CHARACTERS_FN = "characters"
+KEYWORDS_FN = "keywords"
 META_FN = "meta"
 LOGS_FN = "logs"
 CANONS_FN = "canons"
@@ -318,6 +321,8 @@ GUILDS_P = MODEL_FN + "\\" + GUILDS_FN                      # None
 GUILD_P = GUILDS_P + "\\{}"                                 # Guild ID
 CANONS_P = GUILD_P + "\\" + CANONS_FN                       # Guild ID
 CANON_P = CANONS_P + "\\{}"                                 # Guild ID, Canon ID
+KEYWORDS_P = CANON_P + "\\" + KEYWORDS_FN                   # Guild ID, Canon ID
+KEYWORD_P = KEYWORDS_P + "\\{}.json"                        # Guild ID, Canon ID, Character Name
 CHARACTERS_P = CANON_P + "\\" + CHARACTERS_FN               # Guild ID, Canon ID
 CHARACTER_P = CHARACTERS_P + "\\{}.json"                    # Guild ID, Canon ID, Character Name
 C_LOGS_P = CANON_P + "\\" + LOGS_FN                         # Guild ID, Canon ID

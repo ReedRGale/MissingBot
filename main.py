@@ -179,10 +179,14 @@ async def help_command(ctx, args):
                                                content=st.ERR_NO_SUCH_TYPE.format(args[arg - 1], args[arg]),
                                                mode=TidyMode.WARNING)
             elif done(arg):
-                if arg == 1 and st.KEYWORDS.get(args[arg - 1]):  # Keyword checks should only ever be one arg.
+                g = str(ctx.guild.id)
+                c = str(ctx.channel.category_id)
+                k = args[arg - 1]
+                if arg == 1 and os.path.exists(st.KEYWORD_P.format(g, c, k)):
+                    with open(st.KEYWORD_P.format(g, c, k), 'r') as fout:
+                        k_json = json.load(fout)
                     await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
-                                            content=st.INF_HELP.format(args[arg - 1],
-                                                                       st.KEYWORDS.get(args[arg - 1]),
+                                            content=st.INF_HELP.format(k, k_json.get(st.FLD_CNTT),
                                             mode=TidyMode.STANDARD))
                 else:
                     return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
