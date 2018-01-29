@@ -25,10 +25,10 @@ from controller import calc
 async def escape_setter(ctx):
     """A function that encapsulates everything regarding changing a personal escape value."""
     # Request new escape value.
-    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_ESCAPE,
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=st.REQ_NEW_ESCAPE,
                                  checks=[check_args_f(st.MODE_EQ, 1)])
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
+    if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
+        return
 
     set_escape(ctx, tm.prompt.content)
     await tm.rebuild(st.INF_ESCAPE_SET.format(tm.prompt.content) + " " + st.rand_slack())
@@ -37,10 +37,10 @@ async def escape_setter(ctx):
 async def new_canon(ctx):
     """Makes a canon folder and files."""
     # Ask for RP name
-    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_NEW_CANON,
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=st.REQ_NEW_CANON,
                                  checks=[check_args_f(st.MODE_EQ, 1), check_alnum_f()])
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
+    if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
+        return
     canon = tm.prompt.content.replace(" ", "_").replace("\"", "")
 
     # Path syntactical candy.
@@ -59,8 +59,8 @@ async def new_canon(ctx):
     if is_archived:
         tm = await tm.rebuild(st.ASK_REVIVE_RP, checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                                         check_args_f(st.MODE_EQ, 1)])
-        if tm.prompt.content == get_escape(ctx):
-            return get_escape(ctx)
+        if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
+            return
         if tm.prompt.content.lower() in alias.DENY:
             return await tm.rebuild(st.INF_REVIVE_ABORT + " " + st.rand_slack(), req=False)
 
@@ -68,8 +68,8 @@ async def new_canon(ctx):
     tm = await tm.rebuild(st.INF_REVIVE_A_GO + st.REQ_USER_GM if is_archived else st.REQ_USER_GM,
                           checks=[check_member_f(ctx),
                                   check_args_f(st.MODE_EQ, 1)])
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
+    if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
+        return
     gm = tm.prompt.content
     have_gm = gm == ctx.author.mention
     borked = False
@@ -80,11 +80,11 @@ async def new_canon(ctx):
         mem = get_member(ctx, mention=gm)
         if not mem.dm_channel:
             await mem.create_dm()
-        dm_tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.ASK_IF_GM,
+        dm_tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=st.ASK_IF_GM,
                                         dest=mem.dm_channel, member=mem,
                                         checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                                 check_args_f(st.MODE_EQ, 1)])
-        if tm.prompt.content == get_escape(ctx):
+        if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
             result = alias.DENY[0]
         else:
             result = dm_tm.prompt.content
@@ -226,7 +226,7 @@ async def delete_canon(ctx):
                                  mode=TidyMode.WARNING)
 
     # Initialize a tm.
-    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, req=False, content=st.INF_MESSAGING_D)
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False, content=st.INF_MESSAGING_D)
 
     # Collect all players in canon.
     players = list()
@@ -294,8 +294,8 @@ async def new_combat(ctx):
     tm = TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_USER_COMBAT,
                            checks=[check_member_f(ctx),
                                    check_args_f(st.MODE_GTE, 2)])
-    if tm.prompt.content == get_escape(ctx):
-        return get_escape(ctx)
+    if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
+        return
     players = shlex.split(tm.prompt.content)
 
     # Notify users.
@@ -445,7 +445,7 @@ def check_alias_f(aliases, no_dups=False):
 
 async def wait_for_affirmation(ctx, channel, member, content):
     """Method to encapsulate all parts of asking if someone is joining in a combat."""
-    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=content, dest=channel, member=member,
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=content, dest=channel, member=member,
                                  checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                          check_args_f(st.MODE_EQ, 1)])
     return await tm.rebuild("Vote tallied.", req=False)

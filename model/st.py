@@ -65,6 +65,8 @@ INF_HEY_THERE = "Hiya! You called?" \
 
 SAVED = "Databank updated, for whatever reason it needed updating!"
 ESCAPE = "I'll escape the command, but just because you asked nicely. ;>"
+TIMEOUT = "So, you've taken a bit to continue this command. So... call me back when you know what you want to " \
+          "do. Indecisiveness is a real bore. Ciao!"
 
 
 # Request Messages #

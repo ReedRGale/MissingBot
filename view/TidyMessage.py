@@ -48,11 +48,13 @@ class TidyMessage:
         self.mode = kwargs.get("mode")                  # Value of the TidyMode that determines the embed created
         self.esc = kwargs.get("esc")                    # Escape string that exits req
         self.esc_m = kwargs.get("esc_m")                # What to say if escaped
+        self.timeout_m = kwargs.get("timeout_m")        # What to say if timed out
         self.title = kwargs.get("title")                # Title of the embed, if given
         self.dest = kwargs.get("dest")                  # The destination of the message
         self.focus = kwargs.get("focus")                # The member who we're waiting for a response from
         self.editable = kwargs.get("editable")          # Whether the data can be edited later or not
         self.req = kwargs.get("req")                    # Whether this TidyMessage is looking for a response or not
+        self.timeout = kwargs.get("timeout")            # When the TidyMessage should time out; None == No Timeout
 
         # Information generated in rebuild()
         self.prompt = kwargs.get("prompt")          # The message that prompted this TidyMessage
@@ -66,10 +68,10 @@ class TidyMessage:
         self.req_c = kwargs.get("req_c")            # The content for the request
 
     @staticmethod
-    async def build(ctx, esc, esc_m, req=True, editable=False, **kwargs):
+    async def build(ctx, esc, esc_m, timeout_m, req=True, editable=False, timeout=None, **kwargs):
         """Make a new TidyMessage"""
         # Make the TM instance.
-        tm = TidyMessage(ctx=ctx, esc=esc, esc_m=esc_m, prompt=ctx.message)
+        tm = TidyMessage(ctx=ctx, esc=esc, esc_m=esc_m, timeout_m=timeout_m, prompt=ctx.message)
         tm.req = req
         tm.editable = editable
         tm.dest = kwargs.get("dest") if kwargs.get("dest") else ctx.channel
@@ -100,11 +102,11 @@ class TidyMessage:
                 while os.path.exists(st.MEM_COMMAND_G_LOG_P.format(g, m, f + str(i))):
                     i += 1  # Get to a unique name value in the most beautiful way I can bother to write.
                 tm.path = st.MEM_COMMAND_G_LOG_P.format(g, m, f + str(i))
-            return await tm.rebuild(req=req, **kwargs)
+            return await tm.rebuild(req=req, editable=editable, timeout=timeout, **kwargs)
         else:
             return tm
 
-    async def rebuild(self, content, req=True, editable=False, **kwargs):
+    async def rebuild(self, content, req=True, editable=False, timeout=None, **kwargs):
         """Modifies an existing TidyMessage"""
         # Initialize the new TidyMessage as a copy of the current one.
         tm = self.copy()
@@ -115,6 +117,7 @@ class TidyMessage:
         # Fields reset each call.
         tm.req = req
         tm.editable = editable
+        tm.timeout = timeout
         tm.checks = kwargs.get("checks")    # None if nothing to replace it.
         tm.page = kwargs.get("page")        # None if nothing to replace it.
         tm.caller = kwargs.get("caller") if kwargs.get("caller") else "rebuild"
@@ -159,10 +162,12 @@ class TidyMessage:
                            mode=self.mode,
                            esc=self.esc,
                            esc_m=self.esc_m,
+                           timeout_m=self.timeout_m,
                            title=self.title,
                            dest=self.dest,
                            focus=self.focus,
                            editable=self.editable,
+                           timeout=self.timeout,
                            prompt=self.prompt,
                            message=self.message,
                            embed=self.embed,
@@ -392,7 +397,11 @@ class TidyMessage:
                     return rsp.author == tc.focus and rsp.channel == tc.dest
 
                 # Wait for response.
-                tc.prompt = await tc.ctx.bot.wait_for("message", check=check)
+                try:
+                    tc.prompt = await tc.ctx.bot.wait_for("message", check=check, timeout=tm.timeout)
+                except asyncio.TimeoutError:
+                    return await tc.rebuild(tm.timeout_m, page=None, title='', req=False,
+                                            editable=tm.editable, caller=req.__name__ + uid)
 
                 # Escape received, exit command.
                 if tc.prompt.content.lower() == tc.esc:
@@ -404,7 +413,7 @@ class TidyMessage:
                     for c in tc.checks:
                         err = c(*shlex.split(tc.prompt.content))
                         if isinstance(err, str):
-                            tc = await tc.rebuild(err + " " + tm.req_c, editable=tm.editable,
+                            tc = await tc.rebuild(err + " " + tm.req_c, editable=tm.editable, timeout=tm.timeout,
                                                   req=tm.req, req_c=tm.req_c, checks=tm.checks,
                                                   caller=req.__name__ + uid)
                             break
@@ -440,7 +449,7 @@ class TidyMessage:
                 # Wait for a response.
                 try:
                     await tc.ctx.bot.wait_for('reaction_add', check=check)
-                except asyncio.CancelledError:
+                except asyncio.CancelledError or asyncio.TimeoutError:
                     await tc.remove_button('◀')
 
                 # Once this is the reaction we're looking for, rebuild the page.
@@ -449,7 +458,7 @@ class TidyMessage:
                 tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
                                       mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
                                       path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
-                                      req=tm.req, req_c=tm.req_c, checks=tm.checks,
+                                      req=tm.req, req_c=tm.req_c, checks=tm.checks, timeout=tm.timeout,
                                       caller=prev.__name__ + uid)
                 return tc
             task = prev
@@ -482,7 +491,7 @@ class TidyMessage:
                 # Wait for a response.
                 try:
                     await tc.ctx.bot.wait_for('reaction_add', check=check)
-                except asyncio.CancelledError:
+                except asyncio.CancelledError or asyncio.TimeoutError:
                     await tc.remove_button('◀')
 
                 # Once this is the reaction we're looking for, rebuild the page.
@@ -491,7 +500,7 @@ class TidyMessage:
                 tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
                                       mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
                                       path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
-                                      req=tm.req, req_c=tm.req_c, checks=tm.checks,
+                                      req=tm.req, req_c=tm.req_c, checks=tm.checks, timeout=tm.timeout,
                                       caller=next.__name__ + uid)
                 return tc
             task = next
@@ -525,7 +534,7 @@ class TidyMessage:
                 # Wait for a response.
                 try:
                     await tc.ctx.bot.wait_for('reaction_add', check=check)
-                except asyncio.CancelledError:
+                except asyncio.CancelledError or asyncio.TimeoutError:
                     await tc.remove_button('⏭')
 
                 # Once this is the reaction we're looking for, rebuild the page.
@@ -533,7 +542,7 @@ class TidyMessage:
                 tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
                                       mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
                                       path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
-                                      req=tm.req, req_c=tm.req_c, checks=tm.checks,
+                                      req=tm.req, req_c=tm.req_c, checks=tm.checks, timeout=tm.timeout,
                                       caller=first.__name__ + uid)
                 return tc
             task = first
@@ -568,7 +577,7 @@ class TidyMessage:
                 # Wait for a response.
                 try:
                     await tc.ctx.bot.wait_for('reaction_add', check=check)
-                except asyncio.CancelledError:
+                except asyncio.CancelledError or asyncio.TimeoutError:
                     await tc.remove_button('⏮')
 
                 # Once this is the reaction we're looking for, rebuild the page.
@@ -577,7 +586,7 @@ class TidyMessage:
                 tc = await tc.rebuild(page.get(st.FLD_CNTT), title=page.get(st.FLD_TTLE),
                                       mode=page.get(st.FLD_MODE), page=page.get(st.FLD_PAGE),
                                       path=page.get(st.FLD_PATH), editable=page.get(st.FLD_EDTBL),
-                                      req=tm.req, req_c=tm.req_c, checks=tm.checks,
+                                      req=tm.req, req_c=tm.req_c, checks=tm.checks, timeout=tm.timeout,
                                       caller=last.__name__ + uid)
                 return tc
             task = last

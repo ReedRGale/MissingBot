@@ -48,7 +48,7 @@ def call_command(command):
         if not overruled and not val.calling.get(ctx.message.author.id):
             await command(ctx, args)
         elif overruled:
-            await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+            await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                     content=overruled + " " + st.rand_slack(),
                                     mode=TidyMode.WARNING)
 
@@ -131,7 +131,7 @@ async def on_message(msg):
     # Check if the DJ is being addressed. If so, inform the user to call help.
     ctx = await val.bot.get_context(msg)
     if not val.calling.get(msg.author.id) and str(val.bot.owner_id) in msg.content:
-        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=st.INF_HEY_THERE,
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=st.INF_HEY_THERE,
                                 req=False, mode=TidyMode.STANDARD)
     else:
         await val.bot.invoke(ctx)
@@ -164,18 +164,18 @@ async def help_command(ctx, args):
                     else:
                         help_string += st.itlc(st.INF_COMMAND) + " " \
                                        + st.bold(child.name) + ":  " + child.brief + "\n\n"
-                await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=help_string,
+                await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=help_string,
                                         req=False, mode=TidyMode.STANDARD)
             elif isinstance(command, Command) and not done(arg):
-                return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                                content=st.ERR_NO_SUCH_CHILD.format(args[arg - 1], args[arg]),
                                                mode=TidyMode.WARNING)
             elif isinstance(command, Command) and done(arg):
-                await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                         content=st.INF_HELP.format(command.name, command.help),
                                         mode=TidyMode.STANDARD)
             elif not done(arg):
-                return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                                content=st.ERR_NO_SUCH_TYPE.format(args[arg - 1], args[arg]),
                                                mode=TidyMode.WARNING)
             elif done(arg):
@@ -185,11 +185,11 @@ async def help_command(ctx, args):
                 if arg == 1 and os.path.exists(st.KEYWORD_P.format(g, c, k)):
                     with open(st.KEYWORD_P.format(g, c, k), 'r') as fout:
                         k_json = json.load(fout)
-                    await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                    await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                             content=st.INF_HELP.format(k, k_json.get(st.FLD_CNTT),
                                             mode=TidyMode.STANDARD))
                 else:
-                    return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+                    return await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                                    content=st.ERR_NO_SUCH_CHILD.format(args[arg - 2], args[arg - 1]),
                                                    mode=TidyMode.WARNING)
     else:  # Otherwise print out all command briefs.
@@ -202,7 +202,7 @@ async def help_command(ctx, args):
             else:
                 help_string += st.itlc(st.INF_COMMAND) + "  " \
                                + st.bold(name) + ":  " + available_commands[name].brief + "\n\n"
-        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, content=help_string,
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=help_string,
                                 req=False, mode=TidyMode.STANDARD)
 
 
@@ -213,7 +213,7 @@ async def help_command(ctx, args):
 async def new(ctx):
     """Group of commands designated to create things."""
     if ctx.invoked_subcommand is None:
-        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                 content=st.ERR_NEW_WHAT, mode=TidyMode.WARNING)
 
 
@@ -237,7 +237,7 @@ async def new_combat(ctx, args):
 async def delete(ctx):
     """Group of commands designated to remove things."""
     if ctx.invoked_subcommand is None:
-        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                 content=st.ERR_DELETE_WHAT, mode=TidyMode.WARNING)
 
 
@@ -255,7 +255,7 @@ async def delete_canon(ctx, args):
 async def edit(ctx):
     """Group of commands designated to edit data."""
     if ctx.invoked_subcommand is None:
-        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, req=False,
+        await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                 content=st.ERR_EDIT_WHAT, mode=TidyMode.WARNING)
 
 
