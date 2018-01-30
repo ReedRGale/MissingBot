@@ -14,6 +14,7 @@ import shlex
 from pprint import pprint
 from discord.ext.commands import Group, Command
 from model import st, val
+from model.TimeoutBool import TimeoutBool
 from model.enums import UserType, TidyMode
 from view.TidyMessage import TidyMessage
 from controller import util
@@ -32,7 +33,6 @@ val.bot.remove_command("help")
 def call_command(command):
     """Decorator that takes a command, updates the bot's guild state and wraps it in checks.
     If it fails any of the checks, it'll route it to the proper exit."""
-
     async def call(*args):
         # Retrieve context and args.
         ctx = args[0]
@@ -45,15 +45,20 @@ def call_command(command):
         overruled = util.check_perms(ctx)
 
         # Check if a command has already been called by this user.
-        if not overruled and not val.calling.get(ctx.message.author.id):
+        if not overruled and not val.calling.get(ctx.message.author.id) or \
+                             not val.calling.get(ctx.message.author.id).state():
+            # Lock command functionality.
+            val.calling[ctx.message.author.id] = TimeoutBool.start(val.FUCKING_NOVEL)
+
+            # Call command.
             await command(ctx, args)
+
+            # Unlock command functionality.
+            val.calling[ctx.message.author.id] = False
         elif overruled:
             await TidyMessage.build(ctx, util.get_escape(ctx), st.ESCAPE, st.TIMEOUT, req=False,
                                     content=overruled + " " + st.rand_slack(),
                                     mode=TidyMode.WARNING)
-
-        # Unlock command functionality.
-        val.calling[ctx.message.author.id] = False
     return call
 
 
@@ -86,13 +91,6 @@ async def on_member_join(mem):
                     if role_id == r.id:
                         role = r
                 await mem.add_roles(role)
-
-
-@val.bot.event
-async def on_command(ctx):
-    # Record anyone calling a command.
-    if ctx.message.author.id not in val.calling:
-        val.calling[ctx.message.author.id] = True
 
 
 @val.bot.event
@@ -221,13 +219,13 @@ async def new(ctx):
 @call_command
 async def new_canon(ctx, args):
     """Makes a new canon, including folders and player prefs."""
-    return await util.new_canon(ctx)
+    return await util.new_canon(ctx, val.calling[ctx.message.author.id])
 
 
 @new.command(name=st.COMM_COMBAT, help=st.NEW_COM_HELP, brief=st.NEW_COM_BRIEF)
 @call_command
 async def new_combat(ctx, args):
-    return await util.new_combat(ctx.message)
+    return await util.new_combat(ctx.message, val.calling[ctx.message.author.id])
 
 
 #  DELETE COMMANDS  #
@@ -262,7 +260,7 @@ async def edit(ctx):
 @edit.command(name=st.COMM_ESC, help=st.EDT_ESC_HELP, brief=st.EDT_ESC_BRIEF)
 @call_command
 async def edit_escape(ctx, args):
-    return await util.escape_setter(ctx)
+    return await util.escape_setter(ctx, val.calling[ctx.message.author.id])
 
 
 # DEBUG COMMANDS  #

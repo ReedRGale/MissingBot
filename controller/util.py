@@ -22,11 +22,12 @@ from controller import calc
 # Command Encapsulations #
 
 
-async def escape_setter(ctx):
+async def escape_setter(ctx, tb):
     """A function that encapsulates everything regarding changing a personal escape value."""
-    # Request new escape value.
+    # Request new escape value.t
+    tb.reset(val.MEDIUM)
     tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=st.REQ_NEW_ESCAPE,
-                                 checks=[check_args_f(st.MODE_EQ, 1)])
+                                 checks=[check_args_f(st.MODE_EQ, 1)], timeout=val.MEDIUM)
     if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
         return
 
@@ -34,11 +35,12 @@ async def escape_setter(ctx):
     await tm.rebuild(st.INF_ESCAPE_SET.format(tm.prompt.content) + " " + st.rand_slack())
 
 
-async def new_canon(ctx):
+async def new_canon(ctx, tb):
     """Makes a canon folder and files."""
     # Ask for RP name
+    tb.reset(val.MEDIUM)
     tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=st.REQ_NEW_CANON,
-                                 checks=[check_args_f(st.MODE_EQ, 1), check_alnum_f()])
+                                 checks=[check_args_f(st.MODE_EQ, 1), check_alnum_f()], timeout=val.MEDIUM)
     if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
         return
     canon = tm.prompt.content.replace(" ", "_").replace("\"", "")
@@ -57,17 +59,19 @@ async def new_canon(ctx):
 
     # If it's archived tell them they can revive the RP, or cancel the command.
     if is_archived:
+        tb.reset(val.MEDIUM)
         tm = await tm.rebuild(st.ASK_REVIVE_RP, checks=[check_alias_f(alias.CONFIRM_ALIASES),
-                                                        check_args_f(st.MODE_EQ, 1)])
+                                                        check_args_f(st.MODE_EQ, 1)], timeout=val.MEDIUM)
         if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
             return
         if tm.prompt.content.lower() in alias.DENY:
             return await tm.rebuild(st.INF_REVIVE_ABORT + " " + st.rand_slack(), req=False)
 
     # Ask for GM.
+    tb.reset(val.MEDIUM)
     tm = await tm.rebuild(st.INF_REVIVE_A_GO + st.REQ_USER_GM if is_archived else st.REQ_USER_GM,
                           checks=[check_member_f(ctx),
-                                  check_args_f(st.MODE_EQ, 1)])
+                                  check_args_f(st.MODE_EQ, 1)], timeout=val.MEDIUM)
     if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
         return
     gm = tm.prompt.content
@@ -288,12 +292,13 @@ async def delete_canon(ctx):
         tm.rebuild(st.INF_DENIED_DELETE)
 
 
-async def new_combat(ctx):
+async def new_combat(ctx, tb):
     """Begins a combat by opening the relevant channels"""
     # Ask for players.
+    tb.reset(val.MEDIUM)
     tm = TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, content=st.REQ_USER_COMBAT,
                            checks=[check_member_f(ctx),
-                                   check_args_f(st.MODE_GTE, 2)])
+                                   check_args_f(st.MODE_GTE, 2)], timeout=val.MEDIUM)
     if tm.message.embeds[0].description == st.TIMEOUT or tm.prompt.content == get_escape(ctx):
         return
     players = shlex.split(tm.prompt.content)
@@ -444,8 +449,9 @@ def check_alias_f(aliases, no_dups=False):
 
 
 async def wait_for_affirmation(ctx, channel, member, content):
-    """Method to encapsulate all parts of asking if someone is joining in a combat."""
-    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT, content=content, dest=channel, member=member,
+    """Method to encapsulate all parts of asking yes or no in a DM."""
+    tm = await TidyMessage.build(ctx, get_escape(ctx), st.ESCAPE, st.TIMEOUT,
+                                 content=content, dest=channel, member=member,
                                  checks=[check_alias_f(alias.CONFIRM_ALIASES),
                                          check_args_f(st.MODE_EQ, 1)])
     return await tm.rebuild("Vote tallied.", req=False)
