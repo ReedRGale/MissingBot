@@ -172,6 +172,7 @@ ERR_NO_SUCH_KEYWORD = "Sadly, I can't find a keyword in your canon called '{}.' 
 ERR_DELETE_WHAT = "...delete what now?"
 ERR_HELP_WHAT = "...sorry I can't help with nonsense."
 ERR_NEW_WHAT = "...sorry, I can't create every random thing you come up with."
+ERR_EDIT_WHAT = "...sorry, I can't change things that don't exist."
 ERR_DUP_ROLES = "You can't have multiple roles in a canon!!"
 ERR_MEMBER_DANTE = "Flattering as you are, I am not a legal target for this. Cute sentiment though."
 ERR_MEMBER_BOT = "'{}' is a bot. Don't try to use bots as the targets for commands, silly. They can't RP. " \

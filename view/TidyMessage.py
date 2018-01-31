@@ -35,6 +35,8 @@ class TidyMessage:
                                                      checks=[{checks}])"""
 
     # Static Fields #
+    _timeout_m = ""     # What to say on timeout.
+    _esc_m = ""         # What to say on escape.
     _t_imgs = dict()    # TidyMode mapped to array of images.
     _a_imgs = dict()    # TidyMode mapped to array of images.
     _color = dict()     # TidyMode mapped to array of hex values.
@@ -47,7 +49,6 @@ class TidyMessage:
         self.ctx = kwargs.get("ctx")                    # Needed for the bot.wait_for() in req
         self.mode = kwargs.get("mode")                  # Value of the TidyMode that determines the embed created
         self.esc = kwargs.get("esc")                    # Escape string that exits req
-        self.esc_m = kwargs.get("esc_m")                # What to say if escaped
         self.timeout_m = kwargs.get("timeout_m")        # What to say if timed out
         self.title = kwargs.get("title")                # Title of the embed, if given
         self.dest = kwargs.get("dest")                  # The destination of the message
@@ -68,10 +69,10 @@ class TidyMessage:
         self.req_c = kwargs.get("req_c")            # The content for the request
 
     @staticmethod
-    async def build(ctx, esc, esc_m, timeout_m, req=True, editable=False, timeout=None, **kwargs):
+    async def build(ctx, esc, req=True, editable=False, timeout=None, **kwargs):
         """Make a new TidyMessage"""
         # Make the TM instance.
-        tm = TidyMessage(ctx=ctx, esc=esc, esc_m=esc_m, timeout_m=timeout_m, prompt=ctx.message)
+        tm = TidyMessage(ctx=ctx, esc=esc, prompt=ctx.message)
         tm.req = req
         tm.editable = editable
         tm.dest = kwargs.get("dest") if kwargs.get("dest") else ctx.channel
@@ -161,8 +162,6 @@ class TidyMessage:
         return TidyMessage(ctx=self.ctx,
                            mode=self.mode,
                            esc=self.esc,
-                           esc_m=self.esc_m,
-                           timeout_m=self.timeout_m,
                            title=self.title,
                            dest=self.dest,
                            focus=self.focus,
@@ -365,6 +364,16 @@ class TidyMessage:
         raise asyncio.CancelledError()
 
     @staticmethod
+    def set_esc_m(m):
+        """Set the escape message."""
+        TidyMessage._esc_m = m
+
+    @staticmethod
+    def set_timeout_m(m):
+        """Set the escape message."""
+        TidyMessage._timeout_m = m
+
+    @staticmethod
     def set_t_imgs(mode, imgs):
         TidyMessage._t_imgs[mode] = imgs
 
@@ -400,12 +409,12 @@ class TidyMessage:
                 try:
                     tc.prompt = await tc.ctx.bot.wait_for("message", check=check, timeout=tm.timeout)
                 except asyncio.TimeoutError:
-                    return await tc.rebuild(tm.timeout_m, page=None, title='', req=False,
+                    return await tc.rebuild(TidyMessage._timeout_m, page=None, title='', req=False,
                                             editable=tm.editable, caller=req.__name__ + uid)
 
                 # Escape received, exit command.
                 if tc.prompt.content.lower() == tc.esc:
-                    return await tc.rebuild(tm.esc_m, page=None, title='', req=False,
+                    return await tc.rebuild(TidyMessage._esc_m, page=None, title='', req=False,
                                             editable=tm.editable, caller=req.__name__ + uid)
 
                 # Check the information.
